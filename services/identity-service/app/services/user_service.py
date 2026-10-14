@@ -15,6 +15,10 @@ from app.schemas.user import UserCreate, UserRead, UserUpdate
 logger = logging.getLogger(__name__)
 
 
+def _removes_admin_access(changes: dict) -> bool:
+    return changes.get("is_active") is False or ("role" in changes and changes["role"] != Role.ADMIN)
+
+
 class UserService:
     def __init__(self, session: Session) -> None:
         self._session = session
@@ -69,6 +73,8 @@ class UserService:
                 raise ConflictError("Administrators cannot disable their own account")
             if "role" in changes and changes["role"] != Role.ADMIN:
                 raise ConflictError("Administrators cannot remove their own ADMIN role")
+        if _removes_admin_access(changes):
+            self._ensure_another_active_admin(user)
         if "full_name" in changes:
             user.full_name = changes["full_name"]
         if "role" in changes:
@@ -86,6 +92,12 @@ class UserService:
             },
         )
         return user
+
+    def _ensure_another_active_admin(self, user: User) -> None:
+        active_admins = self._users.lock_active_admins()
+        if any(admin.id == user.id for admin in active_admins) and len(active_admins) == 1:
+            self._session.rollback()
+            raise ConflictError("Cannot disable or demote the last active administrator")
 
     def reset_password(self, user_id: uuid.UUID, new_password: str, *, actor: User) -> None:
         user = self.get_user(user_id)

@@ -8,7 +8,7 @@ from app.core.passwords import hash_password
 from app.domain.roles import Role
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import PASSWORD_MIN_LENGTH
+from app.schemas.user import PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH
 
 
 @dataclass(frozen=True)
@@ -37,6 +37,8 @@ def seed_demo_users(session: Session, password: str) -> list[SeedResult]:
     """Create missing demo accounts. Existing accounts are left untouched (idempotent)."""
     if len(password) < PASSWORD_MIN_LENGTH:
         raise ValueError(f"demo password must be at least {PASSWORD_MIN_LENGTH} characters")
+    if len(password) > PASSWORD_MAX_LENGTH:
+        raise ValueError(f"demo password must be at most {PASSWORD_MAX_LENGTH} characters")
     users = UserRepository(session)
     results: list[SeedResult] = []
     for account in DEMO_ACCOUNTS:

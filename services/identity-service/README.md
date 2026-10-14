@@ -138,7 +138,9 @@ TEST_DATABASE_URL=postgresql+psycopg://identity_user:<pw>@localhost:5432/identit
 Business rules:
 - Emails are stored lowercase and are unique (409 on duplicates).
 - Passwords must be 12–128 characters and are hashed with Argon2id. Plaintext passwords are never stored.
-- An admin cannot disable their own account or remove their own ADMIN role (409), so at least one admin always remains.
+- An admin cannot disable their own account or remove their own ADMIN role (409). Any change that would disable or demote
+  the last active ADMIN is also rejected (409); admin-status changes lock the active ADMIN rows, so two admins demoting
+  each other concurrently cannot leave the system without an admin.
 - Accounts are disabled, not deleted, so they can still be audited.
 
 ### Error format
@@ -154,8 +156,8 @@ Every error uses one envelope:
 | 401 | `not_authenticated` | Missing, malformed, invalid or expired token; failed login. Includes a `WWW-Authenticate: Bearer` header |
 | 403 | `forbidden` | Authenticated, but the role lacks the required permission |
 | 404 | `not_found` | Unknown resource |
-| 409 | `conflict` | Duplicate email, admin self-lockout |
-| 422 | `validation_error` | Invalid request. `details` lists `loc`/`msg`/`type`; submitted values are never echoed back |
+| 409 | `conflict` | Duplicate email, admin self-lockout, removing the last active admin |
+| 422 | `validation_error` | Invalid request. `details` lists `loc`/`msg`/`type`; submitted values are never echoed back (messages that could embed input are replaced with `Invalid value`) |
 
 Every failed login (unknown email, wrong password or disabled account) returns the same `401 Invalid credentials`,
 so callers cannot tell which accounts exist.
