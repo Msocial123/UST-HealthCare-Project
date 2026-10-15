@@ -32,6 +32,21 @@ class UserRepository:
         ).all()
         return items, total
 
+    def lock_active_admins(self) -> Sequence[User]:
+        """Lock every active ADMIN row (in id order) for the rest of the transaction.
+
+        Concurrent transactions that change admin status serialize on these locks, so the
+        "at least one active admin" invariant is checked against committed state.
+        """
+        statement = (
+            select(User)
+            .where(User.role == Role.ADMIN.value, User.is_active.is_(True))
+            .order_by(User.id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        return self._session.scalars(statement).all()
+
     def add(self, user: User) -> User:
         self._session.add(user)
         self._session.flush()

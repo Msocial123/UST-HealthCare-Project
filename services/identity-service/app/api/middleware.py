@@ -5,6 +5,8 @@ import uuid
 
 from fastapi import FastAPI, Request, Response
 
+from app.api.errors import internal_error_response
+
 logger = logging.getLogger("app.access")
 _REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9-]{1,64}$")
 
@@ -15,7 +17,15 @@ def register_request_logging(app: FastAPI) -> None:
         incoming = request.headers.get("x-request-id", "")
         request_id = incoming if _REQUEST_ID_PATTERN.match(incoming) else str(uuid.uuid4())
         start = time.perf_counter()
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            # Handled here (not by the outer server-error handler) so the 500 keeps the request ID.
+            logger.error(
+                "unhandled_error",
+                extra={"event": "unhandled_error", "request_id": request_id, "exc_type": type(exc).__name__},
+            )
+            response = internal_error_response()
         # Only method, path (no query string), status and timing are logged; never headers or bodies.
         logger.info(
             "request",

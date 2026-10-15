@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 import jwt
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.time import utcnow
@@ -71,6 +72,25 @@ def test_login_validation_errors_do_not_echo_password(client: TestClient) -> Non
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "validation_error"
     assert secret_password not in response.text
+
+
+@pytest.mark.parametrize(
+    "email", ["secret-local<part>@example.com", "secret-local-part@", "a@b@secret.example"]
+)
+def test_login_validation_errors_do_not_echo_email_fragments(client: TestClient, email: str) -> None:
+    response = client.post(LOGIN_URL, json={"email": email, "password": "irrelevant"})
+    assert response.status_code == 422
+    details = response.json()["error"]["details"]
+    assert details[0]["msg"] == "Invalid value"
+    assert "secret" not in response.text
+
+
+def test_constraint_validation_messages_are_kept(client: TestClient) -> None:
+    response = client.post(
+        LOGIN_URL, json={"email": "user@test.smarthospital.example", "password": "x" * 129}
+    )
+    assert response.status_code == 422
+    assert "at most 128 characters" in response.json()["error"]["details"][0]["msg"]
 
 
 def test_login_missing_fields(client: TestClient) -> None:

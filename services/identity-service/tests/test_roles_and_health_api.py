@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -52,3 +54,22 @@ def test_any_authenticated_role_can_list_roles(client: TestClient, auth_headers,
     assert set(roles) == {"ADMIN", "RECEPTIONIST", "DOCTOR", "READ_ONLY"}
     assert "users:manage" in roles["ADMIN"]["permissions"]
     assert roles["READ_ONLY"]["permissions"] == ["roles:read"]
+
+
+def test_unhandled_error_keeps_request_id_and_is_logged(app, client: TestClient, caplog) -> None:
+    def boom() -> None:
+        raise RuntimeError("synthetic failure with secret-detail")
+
+    app.add_api_route("/boom", boom)
+    caplog.set_level(logging.INFO)
+
+    response = client.get("/boom", headers={"X-Request-ID": "trace-500"})
+
+    assert response.status_code == 500
+    assert response.headers["X-Request-ID"] == "trace-500"
+    assert response.json() == {"error": {"code": "internal_error", "message": "Internal server error"}}
+    assert "secret-detail" not in response.text
+    records = {getattr(r, "event", None): r for r in caplog.records}
+    assert records["unhandled_error"].request_id == "trace-500"
+    assert records["http_request"].status_code == 500
+    assert records["http_request"].request_id == "trace-500"

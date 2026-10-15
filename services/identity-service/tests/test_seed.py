@@ -35,6 +35,21 @@ def test_seed_rejects_weak_password(db_session) -> None:
         seed_demo_users(db_session, "short")
 
 
+def test_seed_rejects_password_longer_than_login_allows(db_session) -> None:
+    with pytest.raises(ValueError, match="at most 128"):
+        seed_demo_users(db_session, "x" * 129)
+
+
+def test_seed_accepts_maximum_length_password_usable_for_login(client, db_session) -> None:
+    password = "Synthetic-" + "x" * 118
+    assert len(password) == 128
+    seed_demo_users(db_session, password)
+    response = client.post(
+        "/api/v1/auth/login", json={"email": "admin@demo.smarthospital.example", "password": password}
+    )
+    assert response.status_code == 200
+
+
 def test_seeded_admin_can_login(client, db_session) -> None:
     seed_demo_users(db_session, DEMO_PASSWORD)
     response = client.post(

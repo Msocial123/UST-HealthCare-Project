@@ -12,6 +12,46 @@ logger = logging.getLogger(__name__)
 
 _HTTP_CODES = {401: "not_authenticated", 403: "forbidden", 404: "not_found", 405: "method_not_allowed"}
 
+# Pydantic error types whose messages are built only from schema constraints, never from the
+# submitted value. Every other type (value_error, email/UUID/JSON parsing, ...) may embed parts
+# of the input, so its message is replaced with a generic one.
+_SAFE_MESSAGE_TYPES = frozenset(
+    {
+        "missing",
+        "extra_forbidden",
+        "string_type",
+        "string_too_short",
+        "string_too_long",
+        "string_pattern_mismatch",
+        "int_type",
+        "int_parsing",
+        "bool_type",
+        "bool_parsing",
+        "greater_than",
+        "greater_than_equal",
+        "less_than",
+        "less_than_equal",
+        "enum",
+        "literal_error",
+        "dict_type",
+        "model_type",
+        "model_attributes_type",
+        "list_type",
+        "uuid_type",
+    }
+)
+_GENERIC_VALIDATION_MESSAGE = "Invalid value"
+
+
+def _validation_detail(err: dict[str, Any]) -> dict[str, Any]:
+    error_type = str(err.get("type", ""))
+    message = err.get("msg", "") if error_type in _SAFE_MESSAGE_TYPES else _GENERIC_VALIDATION_MESSAGE
+    return {"loc": list(err.get("loc", ())), "msg": message, "type": error_type}
+
+
+def internal_error_response(headers: dict[str, str] | None = None) -> JSONResponse:
+    return _error(500, "internal_error", "Internal server error", headers=headers)
+
 
 def _error(status_code: int, code: str, message: str, details: Any = None, headers=None) -> JSONResponse:
     body: dict[str, Any] = {"code": code, "message": message}
@@ -28,10 +68,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
     async def _validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
         # Never echo submitted values back (they may contain passwords).
-        details = [
-            {"loc": list(err.get("loc", ())), "msg": err.get("msg", ""), "type": err.get("type", "")}
-            for err in exc.errors()
-        ]
+        details = [_validation_detail(err) for err in exc.errors()]
         return _error(422, "validation_error", "Request validation failed", details)
 
     @app.exception_handler(StarletteHTTPException)
@@ -43,4 +80,4 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(Exception)
     async def _unhandled(_: Request, exc: Exception) -> JSONResponse:
         logger.error("unhandled_error", extra={"event": "unhandled_error", "exc_type": type(exc).__name__})
-        return _error(500, "internal_error", "Internal server error")
+        return internal_error_response()
