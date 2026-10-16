@@ -8,7 +8,13 @@ from sqlalchemy.orm import Session
 
 from app.clients.facility_client import FacilityClient, FacilityInfo
 from app.core.errors import ConflictError, DomainValidationError
-from app.domain.scheduling import BLOCKING_EXCEPTION_TYPES, MAX_SLOT_RANGE_DAYS, ExceptionType
+from app.domain.scheduling import (
+    BLOCKING_EXCEPTION_TYPES,
+    MAX_SLOT_QUERY_DATE,
+    MAX_SLOT_RANGE_DAYS,
+    MIN_SLOT_QUERY_DATE,
+    ExceptionType,
+)
 from app.domain.slots import Slot, WeeklyRule, Window, compute_slots, local_day_bounds
 from app.repositories.availability_exception_repository import AvailabilityExceptionRepository
 from app.repositories.working_hours_repository import WorkingHoursRepository
@@ -39,6 +45,10 @@ class SlotService(BaseService):
         date_to: date,
         access_token: str,
     ) -> SlotQueryResult:
+        if date_from < MIN_SLOT_QUERY_DATE or date_to > MAX_SLOT_QUERY_DATE:
+            raise DomainValidationError(
+                f"Dates must be between {MIN_SLOT_QUERY_DATE:%Y-%m-%d} and {MAX_SLOT_QUERY_DATE:%Y-%m-%d}"
+            )
         if date_to < date_from:
             raise DomainValidationError("date_to must be on or after date_from")
         if (date_to - date_from).days + 1 > MAX_SLOT_RANGE_DAYS:

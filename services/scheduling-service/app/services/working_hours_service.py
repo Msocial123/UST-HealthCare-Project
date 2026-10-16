@@ -77,7 +77,7 @@ class WorkingHoursService(BaseService):
         )
 
     def update(self, working_hours_id: uuid.UUID, payload: WorkingHoursUpdate) -> WorkingHours:
-        rule = self.get(working_hours_id)
+        rule = self._get_locked(working_hours_id)
         changes = payload.model_dump(exclude_unset=True)
         merged = {
             field: changes.get(field, getattr(rule, field))
@@ -101,7 +101,6 @@ class WorkingHoursService(BaseService):
         if problem:
             raise DomainValidationError(problem)
         if merged["is_active"]:
-            self._repo.lock_provider(rule.provider_id)
             self._ensure_no_overlap(
                 rule.provider_id,
                 rule.facility_id,
@@ -119,11 +118,18 @@ class WorkingHoursService(BaseService):
         return rule
 
     def deactivate(self, working_hours_id: uuid.UUID) -> WorkingHours:
-        rule = self.get(working_hours_id)
+        rule = self._get_locked(working_hours_id)
         if rule.is_active:
             rule.is_active = False
             rule.updated_at = self._now()
             self._commit(OVERLAP_MESSAGE)
+        return rule
+
+    def _get_locked(self, working_hours_id: uuid.UUID) -> WorkingHours:
+        """Load the rule, lock its provider, then re-read it so validation never uses stale values."""
+        rule = self.get(working_hours_id)
+        self._repo.lock_provider(rule.provider_id)
+        self._session.refresh(rule)
         return rule
 
     def _ensure_no_overlap(

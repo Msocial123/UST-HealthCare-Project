@@ -254,3 +254,36 @@ def test_unknown_working_hours_is_404(client, admin, method) -> None:
 def test_invalid_path_ids_are_422(client, admin) -> None:
     assert client.get("/api/v1/providers/not-a-uuid/working-hours", headers=admin).status_code == 422
     assert client.delete("/api/v1/working-hours/not-a-uuid", headers=admin).status_code == 422
+
+
+def test_update_revalidates_against_current_values_not_stale_ones(
+    app, admin, provider_id, facility_id, create_working_hours
+) -> None:
+    """Regression: a request that loaded a rule before a concurrent commit must not validate stale fields."""
+    from datetime import UTC, datetime
+
+    from app.schemas.working_hours import WorkingHoursUpdate
+    from app.services.working_hours_service import WorkingHoursService
+
+    monday = create_working_hours(
+        provider_id, facility_id, weekday=0, start_local_time="09:00", end_local_time="10:00"
+    )
+    target = create_working_hours(
+        provider_id, facility_id, weekday=1, start_local_time="11:00", end_local_time="12:00"
+    )
+    target_id = uuid.UUID(target["id"])
+
+    def clock() -> datetime:
+        return datetime.now(UTC)
+
+    with app.state.session_factory() as stale, app.state.session_factory() as other:
+        WorkingHoursService(stale, clock).get(target_id)  # request B loads Tuesday 11:00-12:00
+        WorkingHoursService(other, clock).update(
+            target_id, WorkingHoursUpdate(weekday=0)
+        )  # request A commits
+        with pytest.raises(Exception) as excinfo:
+            WorkingHoursService(stale, clock).update(
+                target_id, WorkingHoursUpdate(start_local_time="09:00", end_local_time="10:00")
+            )
+    assert getattr(excinfo.value, "status_code", None) == 409
+    assert excinfo.value.details == {"conflicting_id": monday["id"]}

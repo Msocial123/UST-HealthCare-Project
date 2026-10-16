@@ -101,7 +101,7 @@ def extra_hours_slots(windows: Iterable[Window], bounds: Window, slot_minutes: i
         cursor = window.starts_at
         if cursor < bounds.starts_at:
             cursor += step * math.ceil((bounds.starts_at - cursor) / step)
-        while cursor + step <= window.ends_at and cursor < bounds.ends_at:
+        while cursor + step <= window.ends_at and cursor + step <= bounds.ends_at:
             slots.append(Slot(cursor, cursor + step, SlotSource.EXTRA_HOURS))
             cursor += step
     return slots

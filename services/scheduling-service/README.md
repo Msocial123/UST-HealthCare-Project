@@ -114,8 +114,8 @@ uvicorn app.main:create_app --factory --reload --port 8005 --no-access-log
 - OpenAPI JSON: http://localhost:8005/openapi.json
 - `GET /health` (liveness, no auth) and `GET /health/ready` (checks the database, no auth)
 
-The service writes its own structured request logs (method, path without query string, status, duration, request ID).
-Tokens, request bodies and query strings are never logged.
+The service writes its own structured request logs (method, matched endpoint name, status, duration, request ID).
+Raw URL paths, query strings, tokens and request bodies are never logged.
 
 ## Test
 

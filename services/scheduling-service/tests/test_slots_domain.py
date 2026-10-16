@@ -61,3 +61,12 @@ def test_long_extra_hours_window_does_not_iterate_from_its_start() -> None:
     bounds = Window(_utc("2026-04-07T00:00"), _utc("2026-04-07T01:00"))
     window = Window(_utc("2025-04-08T00:00"), _utc("2026-04-07T00:30"))
     assert len(extra_hours_slots([window], bounds, 5)) == 6
+
+
+def test_extra_hours_slots_never_end_after_the_queried_dates() -> None:
+    bounds = Window(_utc("2026-04-07T00:00"), _utc("2026-04-08T00:00"))
+    window = Window(_utc("2026-04-07T23:15"), _utc("2026-04-08T00:30"))
+    slots = extra_hours_slots([window], bounds, 30)
+    assert [(slot.start_utc, slot.end_utc) for slot in slots] == [
+        (_utc("2026-04-07T23:15"), _utc("2026-04-07T23:45"))
+    ]

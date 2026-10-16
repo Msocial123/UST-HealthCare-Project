@@ -288,3 +288,20 @@ def test_slots_facility_unavailable_is_503(client, admin, facilities, provider_i
 def test_slots_inactive_facility_is_409(client, admin, facilities, provider_id) -> None:
     inactive = facilities.add("Asia/Kolkata", is_active=False)
     assert _slots(client, admin, provider_id, inactive, "2026-04-06").status_code == 409
+
+
+@pytest.mark.parametrize(
+    ("date_from", "date_to"),
+    [("9999-12-31", "9999-12-31"), ("0001-01-01", "0001-01-02"), ("1899-12-31", "1900-01-01")],
+    ids=["date-max", "date-min", "before-1900"],
+)
+def test_out_of_range_dates_are_422(
+    client, admin, facilities, provider_id, kolkata, date_from, date_to
+) -> None:
+    response = _slots(client, admin, provider_id, kolkata, date_from, date_to)
+    assert response.status_code == 422
+    assert response.json()["error"] == {
+        "code": "validation_error",
+        "message": "Dates must be between 1900-01-01 and 9998-12-31",
+    }
+    assert facilities.calls == []

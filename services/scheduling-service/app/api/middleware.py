@@ -26,14 +26,16 @@ def register_request_logging(app: FastAPI) -> None:
                 extra={"event": "unhandled_error", "request_id": request_id, "exc_type": type(exc).__name__},
             )
             response = internal_error_response()
-        # Only method, path (no query string), status and timing are logged; never headers or bodies.
+        # Only method, endpoint name (never the raw path or query), status and timing are logged.
+        endpoint = request.scope.get("endpoint")
+        route = getattr(endpoint, "__name__", None) or "<unmatched>"
         logger.info(
             "request",
             extra={
                 "event": "http_request",
                 "request_id": request_id,
                 "method": request.method,
-                "path": request.url.path,
+                "route": route,
                 "status_code": response.status_code,
                 "duration_ms": round((time.perf_counter() - start) * 1000, 2),
             },

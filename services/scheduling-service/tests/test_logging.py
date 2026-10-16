@@ -56,3 +56,17 @@ def test_json_formatter_outputs_structured_fields() -> None:
     payload = json.loads(JsonFormatter().format(record))
     assert payload["message"] == "hello" and payload["event"] == "unit_test"
     assert payload["timestamp"].endswith("+00:00")
+
+
+def test_request_log_uses_endpoint_name_not_raw_path(client, caplog, provider_id) -> None:
+    caplog.set_level(logging.INFO)
+    headers = bearer(mint_token(["ADMIN"]))
+    client.get(f"/api/v1/providers/{provider_id}/working-hours", headers=headers)
+    client.get("/api/v1/unknown/patient-jane-doe-1984-02-03", headers=headers)
+    routes = [record.route for record in caplog.records if getattr(record, "event", None) == "http_request"]
+    assert routes == ["list_working_hours", "<unmatched>"]
+    assert not any(hasattr(record, "path") for record in caplog.records)
+    # The httpx records come from the test client itself, not from the service.
+    service_records = [record for record in caplog.records if record.name != "httpx"]
+    rendered = "\n".join(JsonFormatter().format(record) for record in service_records)
+    assert provider_id not in rendered and "jane-doe" not in rendered
