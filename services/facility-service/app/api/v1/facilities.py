@@ -49,7 +49,13 @@ def search_facilities(
     db: DbSession,
     clock: CurrentClock,
     search: Annotated[
-        str | None, Query(min_length=1, max_length=100, description="Substring of name, code or city")
+        str | None,
+        Query(
+            min_length=1,
+            max_length=100,
+            pattern=r"\S",
+            description="Substring of name, code or city (must contain a non-space character)",
+        ),
     ] = None,
     type: Annotated[FacilityType | None, Query(description="Filter by facility type")] = None,  # noqa: A002
     active: Active = None,

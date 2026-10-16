@@ -193,3 +193,11 @@ def test_status_change_on_missing_facility_is_404(client, admin, action) -> None
 def test_no_delete_endpoint(client, admin, create_facility) -> None:
     facility = create_facility()
     assert client.delete(f"{BASE}/{facility['id']}", headers=admin).status_code == 405
+
+
+@pytest.mark.parametrize("search", ["   ", "\t"])
+def test_blank_search_is_422_not_unfiltered(client, admin, create_facility, search) -> None:
+    create_facility()
+    response = client.get(BASE, params={"search": search}, headers=admin)
+    assert response.status_code == 422
+    assert _error_code(response) == "validation_error"

@@ -126,7 +126,7 @@ TEST_DATABASE_URL=postgresql+psycopg://facility_user:<pw>@localhost:5432/facilit
 `limit` is 1–100 (default 20) and `offset` ≥ 0 on every list endpoint. List responses are
 `{items, total, limit, offset}`. There are no DELETE endpoints.
 
-Search: `search` (1–100 chars) matches a case-insensitive substring of the facility name, code or city. `type` is
+Search: `search` (1–100 chars, not blank; whitespace-only returns 422) matches a case-insensitive substring of the facility name, code or city. `type` is
 one of `HOSPITAL`, `CLINIC`, `DIAGNOSTIC_CENTER`. `active` filters by status.
 
 Example create request (synthetic data):
