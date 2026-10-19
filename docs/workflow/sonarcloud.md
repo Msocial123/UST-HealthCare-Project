@@ -20,14 +20,14 @@ coverage.
 
 | Item | Where | Value |
 |---|---|---|
-| SonarCloud organization | sonarcloud.io, imported from GitHub | e.g. `msocial123` |
-| Projects | One per service; use "Set up a monorepo" with GitHub Actions analysis | key `<organization>_<service>`, e.g. `msocial123_appointment-service` |
+| SonarCloud organization | sonarcloud.io, imported from GitHub | `devin-test` |
+| Projects | One per service; use "Set up a monorepo" with GitHub Actions analysis | key `<organization>_<service>`, e.g. `devin-test_appointment-service` |
 | Automatic Analysis | Each project → Administration → Analysis Method | **Off**. CI analysis fails while it is on. |
 | `SONAR_TOKEN` | GitHub → Settings → Secrets and variables → Actions → **Secrets** | Token from sonarcloud.io → My Account → Security |
-| `SONAR_ORGANIZATION` | GitHub → Settings → Secrets and variables → Actions → **Variables** | Organization key |
+| `SONAR_ORGANIZATION` (optional) | GitHub → Settings → Secrets and variables → Actions → **Variables** | Overrides the default organization `devin-test` |
 
 When a new service joins the CI matrix, create its SonarCloud project with the same key pattern.
-If `SONAR_TOKEN` or `SONAR_ORGANIZATION` is missing, the CI job fails with a clear error instead of
+If `SONAR_TOKEN` is missing, the CI job fails with a clear error instead of
 skipping the gate.
 
 ## Notifications

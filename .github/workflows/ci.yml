@@ -98,12 +98,12 @@ jobs:
           TEST_DATABASE_URL: ${{ env.PG_TEST_URL }}
         run: pytest --cov=app --cov-report=xml:coverage.xml
 
-      # SonarCloud: repository secret SONAR_TOKEN and repository variable SONAR_ORGANIZATION.
+      # SonarCloud: repository secret SONAR_TOKEN; organization from variable SONAR_ORGANIZATION (default devin-test).
       # Project key per service: <SONAR_ORGANIZATION>_<service>. See docs/workflow/sonarcloud.md.
       - name: Check SonarCloud configuration
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION || 'devin-test' }}
         run: |
           if [ -z "$SONAR_TOKEN" ] || [ -z "$SONAR_ORGANIZATION" ]; then
             echo "::error::SonarCloud is not configured: set the SONAR_TOKEN secret and SONAR_ORGANIZATION variable"
@@ -119,8 +119,8 @@ jobs:
         with:
           projectBaseDir: services/${{ matrix.service }}
           args: >
-            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
-            -Dsonar.projectKey=${{ vars.SONAR_ORGANIZATION }}_${{ matrix.service }}
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION || 'devin-test' }}
+            -Dsonar.projectKey=${{ vars.SONAR_ORGANIZATION || 'devin-test' }}_${{ matrix.service }}
             -Dsonar.projectName=${{ matrix.service }}
             -Dsonar.sources=app,migrations
             -Dsonar.tests=tests
@@ -135,7 +135,7 @@ jobs:
         working-directory: .
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: ${{ vars.SONAR_ORGANIZATION }}_${{ matrix.service }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_ORGANIZATION || 'devin-test' }}_${{ matrix.service }}
           SONAR_PULL_REQUEST: ${{ github.event.pull_request.number }}
           SONAR_BRANCH: ${{ github.event_name == 'push' && github.ref_name || '' }}
         run: python .github/scripts/sonar_findings_gate.py
