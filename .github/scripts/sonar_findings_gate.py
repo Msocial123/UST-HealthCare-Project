@@ -49,10 +49,22 @@ def _scope(project_key: str, path: str) -> dict[str, str]:
     return scope
 
 
+def _measure_value(measure: dict) -> int:
+    raw = measure.get("value")
+    if raw is None:
+        raw = measure.get("period", {}).get("value")
+    if raw is None:
+        raw = next((p.get("value") for p in measure.get("periods", []) if p.get("value") is not None), "0")
+    return int(float(raw))
+
+
 def _measures(host: str, token: str, project_key: str) -> dict[str, int]:
-    on_pr = bool(os.environ.get("SONAR_PULL_REQUEST"))
-    prefix = "new_" if on_pr else ""
-    keys = {f"{prefix}violations": "issues", f"{prefix}security_hotspots": "hotspots"}
+    keys = {
+        "violations": "issues",
+        "new_violations": "issues",
+        "security_hotspots": "hotspots",
+        "new_security_hotspots": "hotspots",
+    }
     scope = _scope(project_key, "api/measures/component")
     scope.pop("componentKeys")
     scope.pop("ps")
@@ -60,8 +72,9 @@ def _measures(host: str, token: str, project_key: str) -> dict[str, int]:
     data = _get(host, token, "api/measures/component", params)
     found: dict[str, int] = {}
     for measure in data.get("component", {}).get("measures", []):
-        raw = measure.get("value", measure.get("period", {}).get("value", "0"))
-        found[keys[measure["metric"]]] = int(float(raw))
+        name = keys.get(measure.get("metric"))
+        if name:
+            found[name] = max(found.get(name, 0), _measure_value(measure))
     return found
 
 
@@ -80,10 +93,12 @@ def _wait_for_index(host: str, token: str, project_key: str) -> None:
     deadline = time.monotonic() + INDEX_WAIT_SECONDS
     for name, (path, filters) in probes.items():
         want = expected.get(name, 0)
+        previous = None
         while True:
             seen = _total(host, token, path, {**_scope(project_key, path), **filters})
-            if seen >= want or time.monotonic() >= deadline:
+            if (seen >= want and seen == previous) or time.monotonic() >= deadline:
                 break
+            previous = seen
             time.sleep(POLL_SECONDS)
         print(f"Indexed {name}: {seen} of {want}")
         if seen < want:
@@ -95,7 +110,8 @@ def _describe(item: dict) -> str:
     if line := item.get("line"):
         location = f"{location}:{line}"
     rule = item.get("rule") or item.get("ruleKey") or item.get("securityCategory", "")
-    return f"{location} [{rule}] {item.get('message', '')}"
+    kind = item.get("type") or item.get("vulnerabilityProbability", "")
+    return f"{location} [{rule}] ({kind}) {item.get('message', '')}"
 
 
 def main() -> int:
