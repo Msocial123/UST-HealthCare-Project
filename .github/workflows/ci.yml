@@ -1,6 +1,7 @@
 # CP3 — CI gate (docs/workflow/governed-sdlc.md).
 # Independently re-runs every service's lint, tests (SQLite and PostgreSQL) and Alembic round trip
-# on a clean machine, plus a repository secret scan. Uses synthetic, CI-only values; no real secrets.
+# on a clean machine, a SonarCloud code-quality gate per service, plus a repository secret scan.
+# Uses synthetic, CI-only values; the only real credential is the SONAR_TOKEN repository secret.
 name: CI
 
 on:
@@ -55,6 +56,9 @@ jobs:
       PG_TEST_URL: postgresql+psycopg://ci:ci-only-password@localhost:5432/ci_test
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history so SonarCloud can attribute issues and detect new code.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -89,10 +93,52 @@ jobs:
           c = psycopg.connect('postgresql://ci:ci-only-password@localhost:5432/ci', autocommit=True);
           c.execute('CREATE DATABASE ci_test'); c.close()"
 
-      - name: Tests (PostgreSQL)
+      - name: Tests (PostgreSQL) with coverage
         env:
           TEST_DATABASE_URL: ${{ env.PG_TEST_URL }}
-        run: pytest
+        run: pytest --cov=app --cov-report=xml:coverage.xml
+
+      # SonarCloud: repository secret SONAR_TOKEN and repository variable SONAR_ORGANIZATION.
+      # Project key per service: <SONAR_ORGANIZATION>_<service>. See docs/workflow/sonarcloud.md.
+      - name: Check SonarCloud configuration
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ] || [ -z "$SONAR_ORGANIZATION" ]; then
+            echo "::error::SonarCloud is not configured: set the SONAR_TOKEN secret and SONAR_ORGANIZATION variable"
+            exit 1
+          fi
+
+      - name: SonarCloud scan and Quality Gate
+        id: sonar
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        with:
+          projectBaseDir: services/${{ matrix.service }}
+          args: >
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ vars.SONAR_ORGANIZATION }}_${{ matrix.service }}
+            -Dsonar.projectName=${{ matrix.service }}
+            -Dsonar.sources=app,migrations
+            -Dsonar.tests=tests
+            -Dsonar.python.version=3.12
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.coverage.exclusions=migrations/**
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
+
+      - name: SonarCloud findings gate (vulnerabilities, hotspots, critical/blocker code smells)
+        if: ${{ !cancelled() && (steps.sonar.outcome == 'success' || steps.sonar.outcome == 'failure') }}
+        working-directory: .
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_ORGANIZATION }}_${{ matrix.service }}
+          SONAR_PULL_REQUEST: ${{ github.event.pull_request.number }}
+          SONAR_BRANCH: ${{ github.event_name == 'push' && github.ref_name || '' }}
+        run: python .github/scripts/sonar_findings_gate.py
 
   secret-scan:
     name: secret scan
