@@ -30,6 +30,7 @@ jobs:
           - provider-service
           - facility-service
           - scheduling-service
+          - appointment-service
     defaults:
       run:
         working-directory: services/${{ matrix.service }}
