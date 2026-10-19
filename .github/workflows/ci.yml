@@ -48,7 +48,10 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
+      # Separate databases: the Alembic round trip leaves `alembic_version` behind, and the test suites
+      # expect a disposable database of their own (they drop and recreate tables, and some run migrations).
       PG_URL: postgresql+psycopg://ci:ci-only-password@localhost:5432/ci
+      PG_TEST_URL: postgresql+psycopg://ci:ci-only-password@localhost:5432/ci_test
     steps:
       - uses: actions/checkout@v4
 
@@ -79,9 +82,15 @@ jobs:
           alembic upgrade head
           alembic check
 
+      - name: Create test database
+        run: >-
+          python -c "import psycopg;
+          c = psycopg.connect('postgresql://ci:ci-only-password@localhost:5432/ci', autocommit=True);
+          c.execute('CREATE DATABASE ci_test'); c.close()"
+
       - name: Tests (PostgreSQL)
         env:
-          TEST_DATABASE_URL: ${{ env.PG_URL }}
+          TEST_DATABASE_URL: ${{ env.PG_TEST_URL }}
         run: pytest
 
   secret-scan:
