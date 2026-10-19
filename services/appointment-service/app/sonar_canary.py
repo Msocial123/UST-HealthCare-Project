@@ -1,6 +1,13 @@
 """TEMPORARY pipeline canary: deliberate findings to prove the SonarCloud gate fails. Reverted next commit."""
 
+import hashlib
+
 PARTNER_ENDPOINT = "http://partner-api.ust-healthcare.test/v1/sync"
+password = "changeme"  # noqa: S105
+
+
+def fingerprint(data: bytes) -> str:
+    return hashlib.md5(data).hexdigest()  # noqa: S324
 
 
 def classify(values: list[int], mode: str, strict: bool, limit: int) -> int:
