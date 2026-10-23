@@ -109,6 +109,51 @@ def test_validation_errors_never_echo_submitted_values(client: TestClient, auth_
     assert "2999" not in response.text
 
 
+def test_register_accepts_valid_optional_field_formats(client: TestClient, auth_headers) -> None:
+    response = client.post(
+        PATIENTS_URL,
+        json=_payload(
+            phone="+1 (555) 010-0100",
+            postal_code="AB1 2CD",
+            country="gb",
+            email="a.b@example.org",
+            address_line2="Unit 4",
+        ),
+        headers=auth_headers(Role.RECEPTIONIST),
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["phone"] == "+1 (555) 010-0100"
+    assert body["postal_code"] == "AB1 2CD"
+    assert body["country"] == "GB"
+    assert body["email"] == "a.b@example.org"
+    assert body["address_line2"] == "Unit 4"
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"first_name": "A"},
+        {"last_name": "B" * 100},
+        {"phone": "5550100"},
+        {"phone": "+" + "1" * 31},
+        {"postal_code": "AB"},
+        {"postal_code": "A" * 20},
+        {"date_of_birth": "1900-01-01"},
+        {"date_of_birth": "today"},
+    ],
+)
+def test_register_accepts_field_length_and_date_of_birth_limits(
+    client: TestClient, auth_headers, overrides: dict
+) -> None:
+    if overrides.get("date_of_birth") == "today":
+        overrides = {"date_of_birth": utcnow().date().isoformat()}
+    response = client.post(PATIENTS_URL, json=_payload(**overrides), headers=auth_headers())
+    assert response.status_code == 201
+    field, value = next(iter(overrides.items()))
+    assert response.json()[field] == value
+
+
 def test_mrn_collision_is_retried(client: TestClient, auth_headers, make_patient, monkeypatch) -> None:
     existing = make_patient()
     generated = iter([existing.medical_record_number, "MRN-0000000001"])
@@ -240,6 +285,12 @@ def test_search_by_date_of_birth(client: TestClient, auth_headers, directory) ->
     assert _search(client, auth_headers(), search="1980-12-10") == _ids(directory, "ada", "grace")
     assert _search(client, auth_headers(), search="1980-12-10 grace") == _ids(directory, "grace")
     assert _search(client, auth_headers(), search="1980-02-31") == set()
+
+
+def test_search_uses_only_the_first_five_terms(client: TestClient, auth_headers, directory) -> None:
+    sixth_term_ignored = "ada lovelace 1980-12-10 ada lovelace zzzz"
+    assert _search(client, auth_headers(), search=sixth_term_ignored) == _ids(directory, "ada")
+    assert _search(client, auth_headers(), search="zzzz ada lovelace 1980-12-10 ada") == set()
 
 
 def test_search_treats_like_wildcards_literally(client: TestClient, auth_headers, directory) -> None:

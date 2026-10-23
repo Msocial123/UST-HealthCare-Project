@@ -4,6 +4,8 @@ from fastapi.testclient import TestClient
 
 from app.domain.patients import MRN_LENGTH, generate_mrn
 from app.domain.roles import Permission, Role, permissions_for
+from app.main import create_app
+from tests.conftest import make_settings
 
 
 def test_health_is_public(client: TestClient) -> None:
@@ -17,6 +19,16 @@ def test_readiness_checks_database(client: TestClient) -> None:
     response = client.get("/health/ready")
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "database": "ok"}
+
+
+def test_readiness_is_503_when_database_is_unavailable(tmp_path) -> None:
+    unreachable = f"sqlite+pysqlite:///{tmp_path / 'missing-dir' / 'patients.db'}"
+    application = create_app(make_settings(database_url=unreachable))
+    with TestClient(application) as client:
+        response = client.get("/health/ready")
+        assert response.status_code == 503
+        assert response.json() == {"status": "unavailable", "database": "error"}
+        assert client.get("/health").status_code == 200
 
 
 def test_openapi_docs_are_enabled(client: TestClient) -> None:
