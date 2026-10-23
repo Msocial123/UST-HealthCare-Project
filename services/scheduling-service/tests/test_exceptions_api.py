@@ -193,3 +193,51 @@ def test_unknown_exception_is_404(client, admin, method) -> None:
     response = client.request(method, f"/api/v1/exceptions/{uuid.uuid4()}", json=body, headers=admin)
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "not_found"
+
+
+@pytest.mark.parametrize(
+    ("ends_at", "status"),
+    [("2027-04-06T09:00:00Z", 201), ("2027-04-07T09:00:00Z", 201), ("2027-04-07T09:01:00Z", 422)],
+    ids=["365-days", "366-days", "366-days-plus-1-minute"],
+)
+def test_exception_length_limit(client, admin, provider_id, ends_at, status) -> None:
+    payload = exception_payload(starts_at="2026-04-06T09:00:00Z", ends_at=ends_at)
+    response = client.post(_url(provider_id), json=payload, headers=admin)
+    assert response.status_code == status, response.text
+    if status == 422:
+        error = response.json()["error"]
+        assert error["code"] == "validation_error"
+        assert [detail["msg"] for detail in error["details"]] == ["an exception may span at most 366 days"]
+
+
+@pytest.mark.parametrize("reason_code", ["ab", "a" * 32], ids=["2-chars", "32-chars"])
+def test_reason_code_length_limits_are_accepted(client, admin, provider_id, reason_code) -> None:
+    response = client.post(_url(provider_id), json=exception_payload(reason_code=reason_code), headers=admin)
+    assert response.status_code == 201, response.text
+    assert response.json()["reason_code"] == reason_code.upper()
+
+
+@pytest.mark.parametrize(
+    ("params", "status"),
+    [
+        ({"limit": 1}, 200),
+        ({"limit": 100}, 200),
+        ({"limit": 0}, 422),
+        ({"limit": 101}, 422),
+        ({"offset": 0}, 200),
+        ({"offset": -1}, 422),
+    ],
+    ids=["limit-1", "limit-100", "limit-0", "limit-101", "offset-0", "offset-negative"],
+)
+def test_exceptions_list_pagination_limits(
+    client, admin, provider_id, create_exception, params, status
+) -> None:
+    create_exception(provider_id)
+    response = client.get(_url(provider_id), params={**RANGE, **params}, headers=admin)
+    assert response.status_code == status, response.text
+    if status == 200:
+        body = response.json()
+        assert body["total"] == 1 and len(body["items"]) == 1
+        assert body["limit"] == params.get("limit", 50) and body["offset"] == params.get("offset", 0)
+    else:
+        assert response.json()["error"]["code"] == "validation_error"

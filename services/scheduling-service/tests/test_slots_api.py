@@ -305,3 +305,23 @@ def test_out_of_range_dates_are_422(
         "message": "Dates must be between 1900-01-01 and 9998-12-31",
     }
     assert facilities.calls == []
+
+
+@pytest.mark.parametrize("day", ["1900-01-01", "9998-12-31"], ids=["min-date", "max-date"])
+def test_slot_query_date_limits_are_accepted(client, admin, provider_id, kolkata, day) -> None:
+    response = _slots(client, admin, provider_id, kolkata, day)
+    assert response.status_code == 200, response.text
+    assert response.json()["slots"] == []
+
+
+@pytest.mark.parametrize("day", ["1899-12-31", "9999-12-31"], ids=["below-min", "above-max"])
+def test_slot_query_single_date_outside_limits_is_422(
+    client, admin, facilities, provider_id, kolkata, day
+) -> None:
+    response = _slots(client, admin, provider_id, kolkata, day)
+    assert response.status_code == 422
+    assert response.json()["error"] == {
+        "code": "validation_error",
+        "message": "Dates must be between 1900-01-01 and 9998-12-31",
+    }
+    assert facilities.calls == []
