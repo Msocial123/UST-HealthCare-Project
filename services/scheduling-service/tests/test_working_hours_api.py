@@ -287,3 +287,54 @@ def test_update_revalidates_against_current_values_not_stale_ones(
             )
     assert getattr(excinfo.value, "status_code", None) == 409
     assert excinfo.value.details == {"conflicting_id": monday["id"]}
+
+
+@pytest.mark.parametrize(
+    ("weekday", "start", "end", "slot_minutes"),
+    [(1, "09:00", "09:05", 5), (2, "09:00", "11:00", 120), (3, "09:00", "09:30", 30)],
+    ids=["slot-min-5", "slot-max-120", "one-slot-window"],
+)
+def test_slot_minutes_limits_and_one_slot_window_are_accepted(
+    client, admin, provider_id, facility_id, weekday, start, end, slot_minutes
+) -> None:
+    payload = working_hours_payload(
+        facility_id, weekday=weekday, start_local_time=start, end_local_time=end, slot_minutes=slot_minutes
+    )
+    response = client.post(_url(provider_id), json=payload, headers=admin)
+    assert response.status_code == 201, response.text
+    assert response.json()["slot_minutes"] == slot_minutes
+
+
+@pytest.mark.parametrize("weekday", [0, 6], ids=["monday", "sunday"])
+def test_weekday_limits_are_accepted(client, admin, provider_id, facility_id, weekday) -> None:
+    response = client.post(
+        _url(provider_id), json=working_hours_payload(facility_id, weekday=weekday), headers=admin
+    )
+    assert response.status_code == 201, response.text
+    assert response.json()["weekday"] == weekday
+
+
+@pytest.mark.parametrize(
+    ("params", "status"),
+    [
+        ({"limit": 1}, 200),
+        ({"limit": 100}, 200),
+        ({"limit": 0}, 422),
+        ({"limit": 101}, 422),
+        ({"offset": 0}, 200),
+        ({"offset": -1}, 422),
+    ],
+    ids=["limit-1", "limit-100", "limit-0", "limit-101", "offset-0", "offset-negative"],
+)
+def test_working_hours_list_pagination_limits(
+    client, admin, provider_id, facility_id, create_working_hours, params, status
+) -> None:
+    create_working_hours(provider_id, facility_id)
+    response = client.get(_url(provider_id), params=params, headers=admin)
+    assert response.status_code == status, response.text
+    if status == 200:
+        body = response.json()
+        assert body["total"] == 1 and len(body["items"]) == 1
+        assert body["limit"] == params.get("limit", 50) and body["offset"] == params.get("offset", 0)
+    else:
+        assert response.json()["error"]["code"] == "validation_error"
