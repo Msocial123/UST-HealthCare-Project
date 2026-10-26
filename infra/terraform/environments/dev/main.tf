@@ -5,14 +5,18 @@
 data "aws_caller_identity" "current" {}
 
 data "aws_route53_zone" "public" {
+  count = local.use_custom_domain ? 1 : 0
+
   name         = var.hosted_zone_name
   private_zone = false
 }
 
 locals {
-  name         = "${var.project_name}-${var.environment}"
-  cluster_name = "${local.name}-eks"
-  api_fqdn     = "${var.api_subdomain}.${var.hosted_zone_name}"
+  name              = "${var.project_name}-${var.environment}"
+  cluster_name      = "${local.name}-eks"
+  use_custom_domain = var.hosted_zone_name != null
+  api_fqdn          = local.use_custom_domain ? "${var.api_subdomain}.${var.hosted_zone_name}" : null
+  zone_id           = one(data.aws_route53_zone.public[*].zone_id)
 
   service_databases = {
     for k, s in var.services : k => {
@@ -129,10 +133,10 @@ module "sqs" {
 
 module "ses" {
   source = "../../modules/ses"
-  count  = var.enable_ses ? 1 : 0
+  count  = var.enable_ses && local.use_custom_domain ? 1 : 0
 
   domain  = var.hosted_zone_name
-  zone_id = data.aws_route53_zone.public.zone_id
+  zone_id = local.zone_id
 }
 
 module "shared_bucket" {
@@ -174,9 +178,10 @@ module "github_oidc" {
 
 module "acm" {
   source = "../../modules/acm"
+  count  = local.use_custom_domain ? 1 : 0
 
   domain_name = local.api_fqdn
-  zone_id     = data.aws_route53_zone.public.zone_id
+  zone_id     = local.zone_id
 }
 
 module "alb" {
@@ -186,10 +191,11 @@ module "alb" {
   vpc_id                      = module.vpc.vpc_id
   public_subnet_ids           = module.vpc.public_subnet_ids
   ingress_cidrs               = var.alb_ingress_cidrs
-  certificate_arn             = module.acm.certificate_arn
+  enable_https                = local.use_custom_domain
+  certificate_arn             = one(module.acm[*].certificate_arn)
   node_security_group_id      = module.eks.cluster_security_group_id
   node_autoscaling_group_name = module.eks.node_group_autoscaling_group_name
-  zone_id                     = data.aws_route53_zone.public.zone_id
+  zone_id                     = local.zone_id
   dns_name                    = local.api_fqdn
   deletion_protection         = var.alb_deletion_protection
 

@@ -3,7 +3,7 @@
 
 # ---------- General ----------
 aws_region          = "us-east-1"
-allowed_account_ids = [] # CHANGE ME (recommended): ["123456789012"]
+allowed_account_ids = ["165742853391"]
 project_name        = "smart-hospital"
 environment         = "dev"
 tags = {
@@ -108,8 +108,8 @@ rds_skip_final_snapshot     = false
 secrets_recovery_window_in_days = 7
 
 # ---------- DNS / TLS / edge ----------
-hosted_zone_name             = "example.com" # CHANGE ME: an existing public Route 53 hosted zone in this account
-api_subdomain                = "api.dev"     # API served at https://api.dev.<hosted_zone_name>
+hosted_zone_name             = null      # No custom domain yet: HTTP on the ALB DNS name, no ACM/DNS/SES. Set an existing public Route 53 zone (e.g. "example.com") to enable HTTPS.
+api_subdomain                = "api.dev" # API served at https://api.dev.<hosted_zone_name>
 alb_ingress_cidrs            = ["0.0.0.0/0"]
 alb_deletion_protection      = false
 enable_waf                   = true

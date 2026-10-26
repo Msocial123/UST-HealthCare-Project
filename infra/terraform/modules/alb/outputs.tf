@@ -14,8 +14,8 @@ output "alb_security_group_id" {
 }
 
 output "api_fqdn" {
-  description = "Public API host name."
-  value       = aws_route53_record.alb.fqdn
+  description = "Public API host name (null when enable_https is false)."
+  value       = one(aws_route53_record.alb[*].fqdn)
 }
 
 output "target_group_arns" {
