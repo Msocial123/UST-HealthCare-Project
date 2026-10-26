@@ -48,7 +48,7 @@ variable "node_autoscaling_group_name" {
 }
 
 variable "services" {
-  description = "Routing per service: Kubernetes NodePort, ALB path patterns (max 5), listener rule priority (lower wins) and health check path."
+  description = "Routing per service: Kubernetes NodePort, ALB path patterns (max 5, one listener rule each at priority + index), listener rule priority (lower wins) and health check path."
   type = map(object({
     node_port         = number
     path_patterns     = list(string)

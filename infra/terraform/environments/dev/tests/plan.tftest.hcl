@@ -144,4 +144,9 @@ run "no_custom_domain" {
     condition     = length(module.alb.target_group_arns) == 8
     error_message = "All 8 services are still routed through the ALB."
   }
+
+  assert {
+    condition     = length(module.alb.listener_rule_priorities) == 18
+    error_message = "One ALB listener rule per path pattern (18 in dev)."
+  }
 }

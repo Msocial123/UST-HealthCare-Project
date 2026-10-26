@@ -1,5 +1,16 @@
 locals {
   not_found_body = jsonencode({ error = { code = "not_found", message = "No route", details = [] } })
+
+  # One rule per path pattern (priority = service priority + index), because ALB allows few wildcards per rule.
+  path_rules = merge([
+    for svc, s in var.services : {
+      for i, pattern in s.path_patterns : "${svc}-${i}" => {
+        service      = svc
+        path_pattern = pattern
+        priority     = s.priority + i
+      }
+    }
+  ]...)
 }
 
 resource "aws_security_group" "alb" {
@@ -130,19 +141,19 @@ resource "aws_lb_listener" "https" {
 }
 
 resource "aws_lb_listener_rule" "service" {
-  for_each = var.services
+  for_each = local.path_rules
 
   listener_arn = var.enable_https ? aws_lb_listener.https[0].arn : aws_lb_listener.http.arn
   priority     = each.value.priority
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.service[each.key].arn
+    target_group_arn = aws_lb_target_group.service[each.value.service].arn
   }
 
   condition {
     path_pattern {
-      values = each.value.path_patterns
+      values = [each.value.path_pattern]
     }
   }
 }
