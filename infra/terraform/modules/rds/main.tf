@@ -30,8 +30,9 @@ resource "aws_db_parameter_group" "this" {
   description = "${var.identifier} parameters"
 
   parameter {
-    name  = "rds.force_ssl"
-    value = "1"
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "pending-reboot" # what RDS reports back; "immediate" causes a perpetual diff
   }
 
   lifecycle {
