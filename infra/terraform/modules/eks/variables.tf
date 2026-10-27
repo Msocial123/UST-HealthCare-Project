@@ -23,6 +23,12 @@ variable "subnet_ids" {
   type        = list(string)
 }
 
+variable "additional_security_group_ids" {
+  description = "Extra security groups attached to the control plane ENIs, in addition to the EKS-created cluster security group."
+  type        = list(string)
+  default     = []
+}
+
 variable "endpoint_public_access" {
   description = "Expose the Kubernetes API endpoint publicly (needed for GitHub-hosted runners and kubectl from outside the VPC)."
   type        = bool

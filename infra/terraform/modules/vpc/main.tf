@@ -1,5 +1,6 @@
 locals {
   az_count     = length(var.availability_zones)
+  db_count     = length(var.private_db_subnet_cidrs)
   nat_count    = var.single_nat_gateway ? 1 : local.az_count
   cluster_tags = { "kubernetes.io/cluster/${var.cluster_name}" = "shared" }
 }
@@ -54,7 +55,7 @@ resource "aws_subnet" "private_app" {
 }
 
 resource "aws_subnet" "private_db" {
-  count = local.az_count
+  count = local.db_count
 
   vpc_id            = aws_vpc.this.id
   cidr_block        = var.private_db_subnet_cidrs[count.index]
@@ -125,14 +126,20 @@ resource "aws_route_table_association" "private_app" {
 
 # Database subnets have no route to the internet.
 resource "aws_route_table" "private_db" {
+  count  = local.db_count > 0 ? 1 : 0
   vpc_id = aws_vpc.this.id
 
   tags = { Name = "${var.name}-private-db-rt" }
 }
 
 resource "aws_route_table_association" "private_db" {
-  count = local.az_count
+  count = local.db_count
 
   subnet_id      = aws_subnet.private_db[count.index].id
-  route_table_id = aws_route_table.private_db.id
+  route_table_id = aws_route_table.private_db[0].id
+}
+
+moved {
+  from = aws_route_table.private_db
+  to   = aws_route_table.private_db[0]
 }
