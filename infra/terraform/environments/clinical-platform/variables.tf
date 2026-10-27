@@ -92,8 +92,13 @@ variable "eks_endpoint_public_access" {
 }
 
 variable "eks_endpoint_public_access_cidrs" {
-  description = "CIDRs allowed to reach the public Kubernetes API endpoint."
+  description = "CIDRs allowed to reach the public Kubernetes API endpoint. 0.0.0.0/0 is rejected."
   type        = list(string)
+
+  validation {
+    condition     = length(var.eks_endpoint_public_access_cidrs) > 0 && !contains(var.eks_endpoint_public_access_cidrs, "0.0.0.0/0") && alltrue([for c in var.eks_endpoint_public_access_cidrs : can(cidrhost(c, 0))])
+    error_message = "Provide at least one valid CIDR; 0.0.0.0/0 is not allowed for the EKS API endpoint."
+  }
 }
 
 variable "eks_cluster_admin_principal_arns" {
