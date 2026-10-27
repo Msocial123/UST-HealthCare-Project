@@ -34,8 +34,14 @@ variable "private_app_subnet_cidrs" {
 }
 
 variable "private_db_subnet_cidrs" {
-  description = "Private database subnet CIDRs (RDS), one per availability zone."
+  description = "Private database subnet CIDRs (RDS), one per availability zone. Empty list = no database subnets."
   type        = list(string)
+  default     = []
+
+  validation {
+    condition     = length(var.private_db_subnet_cidrs) == 0 || length(var.private_db_subnet_cidrs) == length(var.availability_zones)
+    error_message = "private_db_subnet_cidrs must be empty or have one CIDR per availability zone."
+  }
 }
 
 variable "single_nat_gateway" {
