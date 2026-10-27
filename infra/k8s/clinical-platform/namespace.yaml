@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: clinical-platform
+  labels:
+    app.kubernetes.io/part-of: clinical-platform
+    pod-security.kubernetes.io/warn: restricted
