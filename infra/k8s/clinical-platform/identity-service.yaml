@@ -100,6 +100,9 @@ kind: Service
 metadata:
   name: identity-service
   namespace: clinical-platform
+  annotations:
+    # ALB target-group health check (used by ingress.yaml); readiness includes the database check.
+    alb.ingress.kubernetes.io/healthcheck-path: /health/ready
   labels:
     app.kubernetes.io/name: identity-service
     app.kubernetes.io/part-of: clinical-platform

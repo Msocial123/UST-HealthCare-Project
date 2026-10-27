@@ -35,3 +35,10 @@ done
 for s in "${SERVICES[@]}"; do
   kubectl -n "$NS" rollout status "deploy/${s}-service" --timeout=300s
 done
+
+# Public ALB (needs the AWS Load Balancer Controller: ./install-lb-controller.sh).
+if kubectl get ingressclass alb >/dev/null 2>&1; then
+  kubectl apply -f "$DIR/ingress.yaml"
+else
+  echo "IngressClass 'alb' not found; run ./install-lb-controller.sh, then kubectl apply -f $DIR/ingress.yaml" >&2
+fi
