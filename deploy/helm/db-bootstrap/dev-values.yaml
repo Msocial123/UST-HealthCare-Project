@@ -3,7 +3,7 @@ serviceAccount:
   roleArn: arn:aws:iam::165742853391:role/smart-hospital-dev-db-bootstrap
 
 # terraform output rds_master_user_secret_arn (changes only if the RDS instance is re-created).
-masterSecret: ""
+masterSecret: "arn:aws:secretsmanager:us-east-1:165742853391:secret:rds!db-83b28b56-b392-4bb3-a04c-0e988ece29b5-wnRKcd"
 
 services:
   identity-service: smart-hospital/dev/identity-service/database

@@ -3,7 +3,7 @@
 # Argo CD syncs the change automatically.
 image:
   repository: 165742853391.dkr.ecr.us-east-1.amazonaws.com/smart-hospital/provider-service
-  tag: ""
+  tag: "5f077cdb0217"
 
 replicaCount: 1
 
