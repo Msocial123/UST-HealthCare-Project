@@ -74,8 +74,8 @@ output "alb_dns_name" {
 }
 
 output "api_base_url" {
-  description = "Public HTTPS base URL."
-  value       = "https://${module.alb.api_fqdn}"
+  description = "Public API base URL (HTTPS on the custom domain, or HTTP on the ALB DNS name when hosted_zone_name is null)."
+  value       = module.alb.api_fqdn != null ? "https://${module.alb.api_fqdn}" : "http://${module.alb.alb_dns_name}"
 }
 
 output "waf_web_acl_arn" {

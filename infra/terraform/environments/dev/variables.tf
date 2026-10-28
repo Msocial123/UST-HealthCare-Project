@@ -192,8 +192,9 @@ variable "secrets_recovery_window_in_days" {
 
 # ---------- DNS / TLS / edge ----------
 variable "hosted_zone_name" {
-  description = "Existing public Route 53 hosted zone (for example example.com)."
+  description = "Existing public Route 53 hosted zone (for example example.com). null = no custom domain: no ACM certificate, DNS record or SES identity, and the API is plain HTTP on the ALB DNS name."
   type        = string
+  default     = null
 }
 
 variable "api_subdomain" {

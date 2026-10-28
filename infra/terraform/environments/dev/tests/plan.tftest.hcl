@@ -83,6 +83,10 @@ override_module {
 run "apply_dev" {
   command = apply
 
+  variables {
+    hosted_zone_name = "example.com"
+  }
+
   assert {
     condition     = length(module.ecr.repository_urls) == 8
     error_message = "expected 8 ECR repositories"
@@ -114,11 +118,35 @@ run "optional_services_off" {
   variables {
     enable_waf           = false
     enable_sqs           = false
+    hosted_zone_name     = "example.com"
     enable_ses           = false
     enable_shared_bucket = false
   }
   assert {
     condition     = length(module.waf) == 0 && length(local.notification_statements) == 0
     error_message = "optional services should be off"
+  }
+}
+
+run "no_custom_domain" {
+  command = plan
+
+  variables {
+    hosted_zone_name = null
+  }
+
+  assert {
+    condition     = length(module.acm) == 0 && length(module.ses) == 0 && length(data.aws_route53_zone.public) == 0
+    error_message = "Without a hosted zone, no ACM certificate, SES identity or zone lookup is created."
+  }
+
+  assert {
+    condition     = length(module.alb.target_group_arns) == 8
+    error_message = "All 8 services are still routed through the ALB."
+  }
+
+  assert {
+    condition     = length(module.alb.listener_rule_priorities) == 18
+    error_message = "One ALB listener rule per path pattern (18 in dev)."
   }
 }

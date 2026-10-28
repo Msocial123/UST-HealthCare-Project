@@ -14,11 +14,16 @@ output "alb_security_group_id" {
 }
 
 output "api_fqdn" {
-  description = "Public API host name."
-  value       = aws_route53_record.alb.fqdn
+  description = "Public API host name (null when enable_https is false)."
+  value       = one(aws_route53_record.alb[*].fqdn)
 }
 
 output "target_group_arns" {
   description = "Map of service name to target group ARN."
   value       = { for k, t in aws_lb_target_group.service : k => t.arn }
+}
+
+output "listener_rule_priorities" {
+  description = "Map of <service>-<index> to listener rule priority."
+  value       = { for k, r in local.path_rules : k => r.priority }
 }
