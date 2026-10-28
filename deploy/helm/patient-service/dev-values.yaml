@@ -2,13 +2,13 @@
 # Rollout: change image.tag (CI does this on every merge to main). Rollback: git revert the commit that changed it.
 # Argo CD syncs the change automatically.
 image:
-  repository: 165742853391.dkr.ecr.us-east-1.amazonaws.com/smart-hospital/patient-service
+  repository: 755573863559.dkr.ecr.us-east-1.amazonaws.com/smart-hospital/patient-service
   tag: "5f077cdb0217"
 
 replicaCount: 1
 
 serviceAccount:
-  roleArn: arn:aws:iam::165742853391:role/smart-hospital-dev-patient-service
+  roleArn: arn:aws:iam::755573863559:role/smart-hospital-dev-patient-service
 
 secrets:
   database: smart-hospital/dev/patient-service/database
