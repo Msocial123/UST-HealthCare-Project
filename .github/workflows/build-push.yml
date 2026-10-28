@@ -1,0 +1,152 @@
+# CI for delivery: build each changed service's image, push it to ECR, then record the new tag in that
+# service's deploy/helm/<service>/dev-values.yaml. Argo CD sees the commit and rolls the service out (CD).
+# AWS access is through GitHub OIDC (Terraform module github-oidc); no AWS keys are stored in GitHub.
+name: Build and push images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/**"
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Services to build, space separated (e.g. "patient-service facility-service"), or "all"'
+        required: true
+        default: all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-push-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  # Override with the repository variable AWS_ROLE_ARN (terraform output github_actions_role_arn).
+  AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN || 'arn:aws:iam::165742853391:role/smart-hospital-dev-github-actions' }}
+  ECR_NAMESPACE: smart-hospital
+
+jobs:
+  changes:
+    name: Detect changed services
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.detect.outputs.services }}
+      tag: ${{ steps.detect.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: detect
+        env:
+          INPUT_SERVICES: ${{ github.event.inputs.services }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          all=$(for d in services/*/; do s=$(basename "$d"); if [ -f "services/$s/Dockerfile" ]; then echo "$s"; fi; done)
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ "$INPUT_SERVICES" = "all" ]; then selected="$all"; else selected="$INPUT_SERVICES"; fi
+          elif [ -z "$BEFORE" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            selected="$all"
+          else
+            changed=$(git diff --name-only "$BEFORE" "$GITHUB_SHA" -- services | cut -d/ -f2 | sort -u)
+            selected=$(comm -12 <(echo "$all" | sort) <(echo "$changed" | sort))
+          fi
+          for s in $selected; do
+            [ -f "services/$s/Dockerfile" ] || { echo "::error::services/$s/Dockerfile not found"; exit 1; }
+          done
+          echo "services=$(echo "$selected" | tr ' ' '\n' | jq -R . | jq -cs 'map(select(length > 0))')" >> "$GITHUB_OUTPUT"
+          echo "tag=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+          printf 'Selected:\n%s\n' "$selected"
+
+  build:
+    name: Build ${{ matrix.service }}
+    needs: changes
+    if: needs.changes.outputs.services != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.changes.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - id: exists
+        env:
+          TAG: ${{ needs.changes.outputs.tag }}
+          REPO: ${{ env.ECR_NAMESPACE }}/${{ matrix.service }}
+        run: |
+          if aws ecr describe-images --repository-name "$REPO" --image-ids imageTag="$TAG" >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"; echo "$REPO:$TAG already exists (tags are immutable); skipping build"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.exists.outputs.found == 'false'
+        uses: docker/build-push-action@v6
+        with:
+          context: services/${{ matrix.service }}
+          push: true
+          provenance: false
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_NAMESPACE }}/${{ matrix.service }}:${{ needs.changes.outputs.tag }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  release:
+    name: Update dev-values.yaml
+    needs: [changes, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set image tags
+        env:
+          SERVICES: ${{ needs.changes.outputs.services }}
+          TAG: ${{ needs.changes.outputs.tag }}
+        run: |
+          for s in $(echo "$SERVICES" | jq -r '.[]'); do
+            f="deploy/helm/$s/dev-values.yaml"
+            if [ -f "$f" ]; then
+              yq -i ".image.tag = \"$TAG\"" "$f"
+            else
+              echo "::warning::$f not found; $s is built but not deployed"
+            fi
+          done
+          git diff --stat
+
+      - name: Commit and push
+        env:
+          TAG: ${{ needs.changes.outputs.tag }}
+        run: |
+          git diff --quiet && { echo "Nothing to change"; exit 0; }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "deploy(dev): roll out images ${TAG}"
+          for _ in 1 2 3 4 5; do
+            git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+          done
+          exit 1

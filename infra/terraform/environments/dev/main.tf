@@ -163,6 +163,24 @@ module "service_irsa" {
   }
 }
 
+# Kubernetes Job (service account db-bootstrap) that creates each service's PostgreSQL role and database
+# using the RDS-managed master password.
+module "db_bootstrap_irsa" {
+  source = "../../modules/service-irsa"
+
+  name              = local.name
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_issuer       = module.eks.oidc_issuer
+  namespace         = var.kubernetes_namespace
+
+  services = {
+    "db-bootstrap" = {
+      secret_arns      = concat([module.rds.master_user_secret_arn], values(module.secrets.db_secret_arns))
+      extra_statements = []
+    }
+  }
+}
+
 module "github_oidc" {
   source = "../../modules/github-oidc"
 

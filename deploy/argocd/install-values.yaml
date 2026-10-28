@@ -1,0 +1,22 @@
+# Values for the argo/argo-cd Helm chart (installed by bootstrap.sh).
+global:
+  domain: argocd.local
+
+configs:
+  cm:
+    # Poll Git every 3 minutes (with up to 30s jitter) so commits are picked up automatically.
+    timeout.reconciliation: 180s
+    timeout.reconciliation.jitter: 30s
+  params:
+    # The UI is reached with kubectl port-forward only; TLS is terminated by the server itself.
+    server.insecure: false
+
+dex:
+  enabled: false
+
+notifications:
+  enabled: false
+
+server:
+  service:
+    type: ClusterIP

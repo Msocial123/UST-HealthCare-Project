@@ -1,0 +1,5 @@
+apiVersion: v2
+name: smart-hospital-apps
+description: Argo CD Applications for the Smart Hospital dev environment (app of apps).
+type: application
+version: 0.1.0

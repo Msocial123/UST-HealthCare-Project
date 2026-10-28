@@ -1,0 +1,20 @@
+# dev environment overrides for appointment-service.
+# Rollout: change image.tag (CI does this on every merge to main). Rollback: git revert the commit that changed it.
+# Argo CD syncs the change automatically.
+image:
+  repository: 165742853391.dkr.ecr.us-east-1.amazonaws.com/smart-hospital/appointment-service
+  tag: "5f077cdb0217"
+
+replicaCount: 1
+
+serviceAccount:
+  roleArn: arn:aws:iam::165742853391:role/smart-hospital-dev-appointment-service
+
+secrets:
+  database: smart-hospital/dev/appointment-service/database
+  jwt: smart-hospital/dev/shared/jwt-signing-key
+
+extraEnv:
+  APP_ENV: development
+  APPOINTMENTS_ENABLED: "true"
+  SCHEDULING_ADVICE_ENABLED: "true"

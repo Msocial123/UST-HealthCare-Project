@@ -1,0 +1,5 @@
+apiVersion: v2
+name: microservice
+description: Shared templates for the Smart Hospital FastAPI microservices (Deployment, NodePort Service, IRSA service account, config, secrets from AWS Secrets Manager, Alembic migration Job).
+type: library
+version: 0.1.0

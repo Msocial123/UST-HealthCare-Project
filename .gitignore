@@ -34,3 +34,6 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+
+# Helm (dependencies are rebuilt by helm / Argo CD from Chart.yaml)
+deploy/helm/*/charts/

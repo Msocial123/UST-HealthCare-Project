@@ -1,0 +1,5 @@
+apiVersion: v2
+name: db-bootstrap
+description: Creates each microservice's PostgreSQL login role and database on RDS (idempotent), using the RDS-managed master password and the per-service credentials Terraform stored in AWS Secrets Manager.
+type: application
+version: 0.1.0

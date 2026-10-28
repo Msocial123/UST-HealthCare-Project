@@ -1,0 +1,22 @@
+repoURL: https://github.com/Msocial123/UST-HealthCare-Project.git
+# Branch Argo CD follows for every Application below.
+targetRevision: main
+namespace: smart-hospital
+# Values file applied on top of each chart's values.yaml.
+envValuesFile: dev-values.yaml
+
+externalSecrets:
+  chartVersion: 2.14.0
+
+syncPolicy:
+  automated:
+    prune: true
+    selfHeal: true
+  syncOptions:
+    - CreateNamespace=true
+  retry:
+    limit: 10
+    backoff:
+      duration: 30s
+      factor: 2
+      maxDuration: 5m

@@ -1,0 +1,38 @@
+# One Application per chart folder deploy/helm/*-service. Adding a new service folder deploys it automatically.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: smart-hospital-services
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: {{ .Values.repoURL }}
+        revision: {{ .Values.targetRevision }}
+        directories:
+          - path: deploy/helm/*-service
+  template:
+    metadata:
+      name: {{ `'{{ .path.basename }}'` }}
+      namespace: argocd
+      labels:
+        app.kubernetes.io/part-of: smart-hospital
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      source:
+        repoURL: {{ .Values.repoURL }}
+        targetRevision: {{ .Values.targetRevision }}
+        path: {{ `'{{ .path.path }}'` }}
+        helm:
+          valueFiles:
+            - values.yaml
+            - {{ .Values.envValuesFile }}
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: {{ .Values.namespace }}
+      syncPolicy:
+        {{- toYaml .Values.syncPolicy | nindent 8 }}

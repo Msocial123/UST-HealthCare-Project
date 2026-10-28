@@ -1,0 +1,56 @@
+# Base definition of scheduling-service. Environment-specific values (image tag, replicas, AWS names, flags) live in dev-values.yaml,
+# so rollouts and rollbacks only ever touch dev-values.yaml.
+name: scheduling-service
+containerPort: 8005
+
+# NodePort targeted by the Terraform ALB target group (services[*].node_port in infra/terraform/environments/dev/terraform.tfvars).
+service:
+  nodePort: 30085
+
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+revisionHistoryLimit: 5
+
+serviceAccount:
+  roleArn: ""
+
+# AWS Secrets Manager names, read through the External Secrets Operator into the <name>-env Secret.
+secrets:
+  awsRegion: us-east-1
+  database: ""
+  jwt: ""
+  refreshInterval: 1h
+
+migrations:
+  enabled: true
+  backoffLimit: 3
+
+probes:
+  livenessPath: /health
+  readinessPath: /health/ready
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 384Mi
+
+# Calls facility-service through its cluster DNS name (Kubernetes Service in the same namespace).
+env:
+  LOG_LEVEL: INFO
+  JWT_ALGORITHM: HS256
+  JWT_ISSUER: https://identity.smart-hospital.local
+  JWT_AUDIENCE: smart-hospital-api
+  JWT_LEEWAY_SECONDS: "30"
+  FACILITY_SERVICE_URL: "http://facility-service:8004"
+  FACILITY_TIMEOUT_SECONDS: "3"
+  EXTRA_HOURS_SLOT_MINUTES: "15"
+
+# Per-environment overrides of env (set in dev-values.yaml).
+extraEnv: {}
