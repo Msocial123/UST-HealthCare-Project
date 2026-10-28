@@ -1,0 +1,9 @@
+apiVersion: v2
+name: provider-service
+description: Helm chart for the Smart Hospital provider-service.
+type: application
+version: 0.1.0
+dependencies:
+  - name: microservice
+    version: 0.1.0
+    repository: file://../microservice

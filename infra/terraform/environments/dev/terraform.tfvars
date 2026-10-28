@@ -21,8 +21,8 @@ single_nat_gateway       = true # one NAT gateway in AZ A, as in the diagram
 
 # ---------- EKS ----------
 eks_cluster_version              = "1.34"
-eks_endpoint_public_access_cidrs = ["0.0.0.0/0"] # CHANGE ME: restrict to office/VPN CIDRs (GitHub-hosted runners need public access)
-eks_cluster_admin_principal_arns = []            # e.g. ["arn:aws:iam::123456789012:role/Admin"]
+eks_endpoint_public_access_cidrs = ["140.232.64.0/26"] # Devin session egress range. Add operator IPs here; CI does not need the API (ArgoCD pulls from Git)
+eks_cluster_admin_principal_arns = []                  # e.g. ["arn:aws:iam::123456789012:role/Admin"]
 eks_node_instance_types          = ["t3.medium"]
 eks_node_capacity_type           = "ON_DEMAND"
 eks_node_disk_size               = 20
@@ -31,7 +31,7 @@ eks_node_max_size                = 3
 eks_node_desired_size            = 2
 kubernetes_namespace             = "smart-hospital"
 
-# ---------- The eight FastAPI microservices (container port 8000) ----------
+# ---------- The eight FastAPI microservices ----------
 # Each Kubernetes Service must be type NodePort with the node_port below; the ALB routes by path.
 # Lower priority numbers are evaluated first: scheduling's /providers/*/... routes sit ahead of provider-service.
 services = {

@@ -1,0 +1,18 @@
+# dev environment overrides for provider-service.
+# Rollout: change image.tag (CI does this on every merge to main). Rollback: git revert the commit that changed it.
+# Argo CD syncs the change automatically.
+image:
+  repository: 165742853391.dkr.ecr.us-east-1.amazonaws.com/smart-hospital/provider-service
+  tag: ""
+
+replicaCount: 1
+
+serviceAccount:
+  roleArn: arn:aws:iam::165742853391:role/smart-hospital-dev-provider-service
+
+secrets:
+  database: smart-hospital/dev/provider-service/database
+  jwt: smart-hospital/dev/shared/jwt-signing-key
+
+extraEnv:
+  APP_ENV: development

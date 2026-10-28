@@ -1,0 +1,28 @@
+# App of apps: Argo CD watches deploy/argocd/apps and creates every other Application from it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: smart-hospital-root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Msocial123/UST-HealthCare-Project.git
+    targetRevision: main
+    path: deploy/argocd/apps
+    helm:
+      valueFiles:
+        - values.yaml
+      # Branch every child Application follows (kept equal to spec.source.targetRevision).
+      parameters:
+        - name: targetRevision
+          value: main
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

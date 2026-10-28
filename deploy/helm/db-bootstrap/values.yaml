@@ -1,0 +1,15 @@
+# Environment-specific values live in dev-values.yaml.
+name: db-bootstrap
+
+image: public.ecr.aws/docker/library/postgres:16-alpine
+
+awsRegion: us-east-1
+
+serviceAccount:
+  roleArn: ""
+
+# ARN of the RDS-managed master user secret (terraform output rds_master_user_secret_arn).
+masterSecret: ""
+
+# Secrets Manager name of each service's database credentials (keys: host, port, dbname, username, password).
+services: {}

@@ -97,3 +97,8 @@ output "shared_bucket_name" {
   description = "Shared-files bucket (null when disabled)."
   value       = one(module.shared_bucket[*].bucket_name)
 }
+
+output "db_bootstrap_role_arn" {
+  description = "IAM role for the db-bootstrap Kubernetes service account."
+  value       = module.db_bootstrap_irsa.role_arns["db-bootstrap"]
+}

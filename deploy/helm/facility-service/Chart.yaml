@@ -1,0 +1,9 @@
+apiVersion: v2
+name: facility-service
+description: Helm chart for the Smart Hospital facility-service.
+type: application
+version: 0.1.0
+dependencies:
+  - name: microservice
+    version: 0.1.0
+    repository: file://../microservice
