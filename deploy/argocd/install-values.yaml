@@ -8,7 +8,7 @@ configs:
     timeout.reconciliation: 180s
     timeout.reconciliation.jitter: 30s
   params:
-    # The UI is reached with kubectl port-forward only; TLS is terminated by the server itself.
+    # TLS is terminated by the server itself (self-signed certificate); the NLB passes TCP through.
     server.insecure: false
 
 dex:
@@ -19,4 +19,8 @@ notifications:
 
 server:
   service:
-    type: ClusterIP
+    # Public Network Load Balancer created by the EKS cloud provider in the public subnets.
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing

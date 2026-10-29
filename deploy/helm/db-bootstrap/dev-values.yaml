@@ -1,9 +1,9 @@
 # dev environment overrides for db-bootstrap.
 serviceAccount:
-  roleArn: arn:aws:iam::755573863559:role/smart-hospital-dev-db-bootstrap
+  roleArn: arn:aws:iam::165742853391:role/smart-hospital-dev-db-bootstrap
 
 # terraform output rds_master_user_secret_arn (changes only if the RDS instance is re-created).
-masterSecret: "arn:aws:secretsmanager:us-east-1:755573863559:secret:rds!db-7dea8719-6f55-4fff-9a67-e9d5e7108134-vd5b54"
+masterSecret: "arn:aws:secretsmanager:us-east-1:165742853391:secret:rds!db-ebd33ef2-0a59-41dc-973d-276ada2c244b-WHmf0l"
 
 services:
   identity-service: smart-hospital/dev/identity-service/database
