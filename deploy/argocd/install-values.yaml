@@ -8,7 +8,7 @@ configs:
     timeout.reconciliation: 180s
     timeout.reconciliation.jitter: 30s
   params:
-    # The UI is reached with kubectl port-forward only; TLS is terminated by the server itself.
+    # TLS is terminated by the server itself (self-signed certificate); the load balancer passes TCP through.
     server.insecure: false
 
 dex:
@@ -19,4 +19,6 @@ notifications:
 
 server:
   service:
-    type: ClusterIP
+    # Public Classic Load Balancer (TCP passthrough) created by the EKS cloud provider in the public subnets.
+    # Not NLB: this account is not allowed to create Network Load Balancers.
+    type: LoadBalancer

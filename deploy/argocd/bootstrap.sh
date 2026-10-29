@@ -24,5 +24,5 @@ sed -e "s|targetRevision: main|targetRevision: ${REVISION}|" -e "s|value: main|v
   kubectl apply -f -
 
 echo "Argo CD is installed and following '${REVISION}'."
-echo "UI: kubectl -n argocd port-forward svc/argocd-server 8080:443  ->  https://localhost:8080 (user: admin)"
+echo "UI: https://$(kubectl -n argocd get svc argocd-server -o jsonpath='{.status.loadBalancer.ingress[0].hostname}') (user: admin; self-signed certificate, DNS can take a few minutes)"
 echo "Initial admin password: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"

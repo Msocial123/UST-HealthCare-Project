@@ -3,7 +3,7 @@
 
 # ---------- General ----------
 aws_region          = "us-east-1"
-allowed_account_ids = ["755573863559"]
+allowed_account_ids = ["165742853391"]
 project_name        = "smart-hospital"
 environment         = "dev"
 tags = {
@@ -24,7 +24,7 @@ eks_cluster_version              = "1.34"
 eks_endpoint_public_access_cidrs = ["140.232.64.0/26"] # Devin session egress range. Add operator IPs here; CI does not need the API (ArgoCD pulls from Git)
 eks_cluster_admin_principal_arns = []                  # e.g. ["arn:aws:iam::123456789012:role/Admin"]
 eks_node_instance_types          = ["t3.medium", "t3a.medium"]
-eks_node_capacity_type           = "SPOT" # on-demand vCPU quota in this account is used by other workloads; spot is cheaper for dev
+eks_node_capacity_type           = "SPOT" # spot is cheaper for dev; AWS may reclaim a node, which the min of 2 nodes tolerates
 eks_node_disk_size               = 20
 eks_node_min_size                = 2
 eks_node_max_size                = 3
