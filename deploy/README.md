@@ -80,7 +80,8 @@ Monitoring uses Datadog only; no AWS-native monitoring services are created.
   aws secretsmanager put-secret-value --secret-id smart-hospital/dev/datadog/api-key --secret-string '{"api_key":"<key>"}'
   ```
 
-- Dashboards (EKS infrastructure; service SLI/SLO/SLA), SLOs (availability and p95 latency per service) and monitors (SLO burn rate, replicas, restarts, node CPU/memory, error logs) are Terraform in `infra/terraform/environments/dev-observability`, with its own state in the same S3 bucket. Run it with `DD_API_KEY` and `DD_APP_KEY` in the environment.
+- Dashboards (EKS infrastructure; service SLI/SLO/SLA), SLOs (availability and p95 latency per service) and monitors (SLO burn rate, replicas, restarts, node CPU/memory, error logs) were created in Datadog through the Datadog API, from the dashboard JSON in `infra/terraform/modules/datadog-observability/dashboards/`. The same definitions are also kept as an optional Terraform stack in `infra/terraform/environments/dev-observability` (own state in the same S3 bucket; needs `DD_API_KEY` and `DD_APP_KEY` in the environment). Don't apply it on top of the API-created objects, or they will be duplicated.
+- Dashboard queries use template variables as bare `$cluster` / `$env` (they expand to `kube_cluster_name:<value>` / `env:<value>`); writing `kube_cluster_name:$cluster` doubles the prefix and matches nothing.
 
 ## Check locally
 
