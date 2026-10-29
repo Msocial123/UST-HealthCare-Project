@@ -102,3 +102,13 @@ output "db_bootstrap_role_arn" {
   description = "IAM role for the db-bootstrap Kubernetes service account."
   value       = module.db_bootstrap_irsa.role_arns["db-bootstrap"]
 }
+
+output "datadog_secrets_role_arn" {
+  description = "IAM role for the datadog-secrets Kubernetes service account."
+  value       = module.datadog_irsa.role_arns["datadog-secrets"]
+}
+
+output "datadog_api_key_secret_name" {
+  description = "Secrets Manager secret to put the Datadog API key into ({\"api_key\": \"...\"})."
+  value       = module.datadog.api_key_secret_name
+}

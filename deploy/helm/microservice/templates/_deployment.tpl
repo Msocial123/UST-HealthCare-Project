@@ -22,8 +22,16 @@ spec:
         {{- include "microservice.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/part-of: smart-hospital
         app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+        {{- include "microservice.datadogLabels" . | nindent 8 }}
+        {{- if (.Values.datadog | default dict).env }}
+        # Lets the Datadog admission controller inject DD_AGENT_HOST/DD_ENV/DD_SERVICE/DD_VERSION and ddtrace.
+        admission.datadoghq.com/enabled: "true"
+        {{- end }}
       annotations:
         checksum/config: {{ include "microservice.configmap" . | sha256sum }}
+        {{- if (.Values.datadog | default dict).env }}
+        ad.datadoghq.com/app.logs: {{ printf "[{\"source\":\"python\",\"service\":\"%s\"}]" (include "microservice.name" .) | quote }}
+        {{- end }}
     spec:
       serviceAccountName: {{ include "microservice.name" . }}
       automountServiceAccountToken: false

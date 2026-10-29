@@ -8,6 +8,10 @@ envValuesFile: dev-values.yaml
 externalSecrets:
   chartVersion: 2.14.0
 
+datadog:
+  chartVersion: 3.262.0
+  namespace: datadog
+
 syncPolicy:
   automated:
     prune: true

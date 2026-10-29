@@ -65,6 +65,23 @@ GitHub Actions authenticates to AWS with OIDC (`smart-hospital-dev-github-action
    `https://<hostname>` (self-signed certificate). User `admin`, password from the `argocd-initial-admin-secret` Secret;
    change it after the first login.
 
+## Monitoring (Datadog)
+
+Monitoring uses Datadog only; no AWS-native monitoring services are created.
+
+- `deploy/datadog/values.yaml` + `dev-values.yaml`: values for the official `datadog` Helm chart, installed by the Argo CD Application `datadog` (namespace `datadog`).
+  - **Metrics:** node, container and kube-state metrics, Kubernetes events, live containers.
+  - **Logs:** collected from every container (the services already log JSON).
+  - **Traces:** Single Step Instrumentation injects `ddtrace` into pods in the `smart-hospital` namespace; no code or image change. `/health*` probe requests are dropped.
+- Each service is tagged `env`/`service`/`version` (unified service tagging) through `datadog.env` in its `dev-values.yaml`; `version` is the image tag, so deployments show up in APM.
+- The API key is read from AWS Secrets Manager by `deploy/helm/datadog-secrets` (External Secrets). Terraform creates the empty secret `smart-hospital/dev/datadog/api-key`; put the value in once:
+
+  ```bash
+  aws secretsmanager put-secret-value --secret-id smart-hospital/dev/datadog/api-key --secret-string '{"api_key":"<key>"}'
+  ```
+
+- Dashboards, SLOs and SLO burn-rate monitors live in Datadog (tag `project:smart-hospital`); see the PR that added this section for their links.
+
 ## Check locally
 
 ```
