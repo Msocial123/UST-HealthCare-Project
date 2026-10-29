@@ -8,7 +8,7 @@ configs:
     timeout.reconciliation: 180s
     timeout.reconciliation.jitter: 30s
   params:
-    # TLS is terminated by the server itself (self-signed certificate); the NLB passes TCP through.
+    # TLS is terminated by the server itself (self-signed certificate); the load balancer passes TCP through.
     server.insecure: false
 
 dex:
@@ -19,8 +19,6 @@ notifications:
 
 server:
   service:
-    # Public Network Load Balancer created by the EKS cloud provider in the public subnets.
+    # Public Classic Load Balancer (TCP passthrough) created by the EKS cloud provider in the public subnets.
+    # Not NLB: this account is not allowed to create Network Load Balancers.
     type: LoadBalancer
-    annotations:
-      service.beta.kubernetes.io/aws-load-balancer-type: nlb
-      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing

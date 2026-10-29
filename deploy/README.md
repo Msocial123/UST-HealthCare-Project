@@ -60,7 +60,7 @@ GitHub Actions authenticates to AWS with OIDC (`smart-hospital-dev-github-action
 3. Build and push the first images: run the **Build and push images** workflow with `all` (or push from a workstation).
 4. `aws eks update-kubeconfig --name smart-hospital-dev-eks --region us-east-1`, then `deploy/argocd/bootstrap.sh`
    (pass a branch name to follow a branch other than `main`).
-5. Argo CD UI: public Network Load Balancer on the `argocd-server` Service. Get the address with
+5. Argo CD UI: public Classic Load Balancer on the `argocd-server` Service. Get the address with
    `kubectl -n argocd get svc argocd-server -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'` and open
    `https://<hostname>` (self-signed certificate). User `admin`, password from the `argocd-initial-admin-secret` Secret;
    change it after the first login.
