@@ -1,0 +1,5 @@
+# dev environment overrides for datadog-secrets.
+serviceAccount:
+  roleArn: arn:aws:iam::165742853391:role/smart-hospital-dev-datadog-secrets
+apiKeySecret: smart-hospital/dev/datadog/api-key
+clusterAgentTokenSecret: smart-hospital/dev/datadog/cluster-agent-token

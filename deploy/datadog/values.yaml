@@ -1,0 +1,84 @@
+# Values for the official Datadog Helm chart (https://github.com/DataDog/helm-charts/tree/main/charts/datadog).
+# Environment-specific values (site, cluster name, env tag) are in dev-values.yaml.
+datadog:
+  # Kubernetes Secret created by the datadog-secrets chart from AWS Secrets Manager.
+  apiKeyExistingSecret: datadog-secret
+  kubelet:
+    # EKS kubelet certificates are not signed for the node IP.
+    tlsVerify: false
+  collectEvents: true
+  kubeStateMetricsCore:
+    enabled: true
+  orchestratorExplorer:
+    enabled: true
+  logs:
+    enabled: true
+    containerCollectAll: true
+  apm:
+    portEnabled: true
+    socketEnabled: true
+    # Single Step Instrumentation: the Cluster Agent injects ddtrace into the Python services at pod start,
+    # so no service code or image changes are needed.
+    instrumentation:
+      enabled: true
+      targets:
+        - name: smart-hospital-python
+          namespaceSelector:
+            matchNames:
+              - smart-hospital
+          ddTraceVersions:
+            python: "3"
+  processAgent:
+    enabled: true
+    processCollection: false
+  networkMonitoring:
+    enabled: false
+  # Do not ship logs from the agent itself or from kube-system noise.
+  containerExcludeLogs: "kube_namespace:kube-system image:.*datadog.*"
+  # Operator-based install and the instrumentation CRD are not used; the Agent is managed by this chart.
+  operator:
+    enabled: false
+  instrumentationCrd:
+    enabled: false
+
+clusterAgent:
+  enabled: true
+  replicas: 1
+  tokenExistingSecret: datadog-secret
+  admissionController:
+    enabled: true
+    mutateUnlabelled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+agents:
+  containers:
+    agent:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          memory: 512Mi
+    traceAgent:
+      env:
+        # Keep Kubernetes probe requests out of traces and the SLO request counts.
+        - name: DD_APM_FILTER_TAGS_REGEX_REJECT
+          value: "http.route:^/health"
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
+    processAgent:
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          memory: 256Mi

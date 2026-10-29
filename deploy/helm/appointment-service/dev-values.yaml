@@ -18,3 +18,7 @@ extraEnv:
   APP_ENV: development
   APPOINTMENTS_ENABLED: "true"
   SCHEDULING_ADVICE_ENABLED: "true"
+
+# Datadog unified service tagging (env tag on metrics, logs and traces).
+datadog:
+  env: dev

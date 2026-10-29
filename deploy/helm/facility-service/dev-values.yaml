@@ -16,3 +16,7 @@ secrets:
 
 extraEnv:
   APP_ENV: development
+
+# Datadog unified service tagging (env tag on metrics, logs and traces).
+datadog:
+  env: dev

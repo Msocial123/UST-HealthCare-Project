@@ -1,0 +1,7 @@
+# dev environment overrides for the Datadog Agent.
+datadog:
+  site: datadoghq.com
+  clusterName: smart-hospital-dev-eks
+  tags:
+    - env:dev
+    - project:smart-hospital

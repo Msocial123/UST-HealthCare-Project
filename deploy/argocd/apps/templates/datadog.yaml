@@ -1,0 +1,62 @@
+# Datadog Agent (DaemonSet) + Cluster Agent: metrics, logs, APM traces, Kubernetes events and state.
+# The API key comes from AWS Secrets Manager through datadog-secrets; nothing secret is stored in Git.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: datadog-secrets
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.repoURL }}
+    targetRevision: {{ .Values.targetRevision }}
+    path: deploy/helm/datadog-secrets
+    helm:
+      valueFiles:
+        - values.yaml
+        - {{ .Values.envValuesFile }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.datadog.namespace }}
+  syncPolicy:
+    {{- toYaml .Values.syncPolicy | nindent 4 }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: datadog
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://helm.datadoghq.com
+      chart: datadog
+      targetRevision: {{ .Values.datadog.chartVersion }}
+      helm:
+        valueFiles:
+          - $values/deploy/datadog/values.yaml
+          - $values/deploy/datadog/{{ .Values.envValuesFile }}
+    - repoURL: {{ .Values.repoURL }}
+      targetRevision: {{ .Values.targetRevision }}
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.datadog.namespace }}
+  # The chart renders a new random install_id into this ConfigMap on every render.
+  ignoreDifferences:
+    - kind: ConfigMap
+      name: datadog-kpi-telemetry-configmap
+      jsonPointers:
+        - /data
+  syncPolicy:
+    {{- $sp := deepCopy .Values.syncPolicy }}
+    {{- $_ := set $sp "syncOptions" (append $sp.syncOptions "RespectIgnoreDifferences=true") }}
+    {{- toYaml $sp | nindent 4 }}

@@ -8,6 +8,7 @@ app.kubernetes.io/part-of: smart-hospital
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/version: {{ .Values.image.tag | quote }}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
+{{- include "microservice.datadogLabels" . | nindent 0 }}
 {{- end -}}
 
 {{- define "microservice.selectorLabels" -}}
@@ -43,4 +44,13 @@ capabilities:
     name: {{ include "microservice.name" . }}
 - secretRef:
     name: {{ include "microservice.secretName" . }}
+{{- end -}}
+
+{{- /* Datadog unified service tagging (env/service/version), set when datadog.env is configured. */ -}}
+{{- define "microservice.datadogLabels" -}}
+{{- with (.Values.datadog | default dict).env }}
+tags.datadoghq.com/env: {{ . | quote }}
+tags.datadoghq.com/service: {{ include "microservice.name" $ }}
+tags.datadoghq.com/version: {{ $.Values.image.tag | quote }}
+{{- end }}
 {{- end -}}

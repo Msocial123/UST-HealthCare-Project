@@ -181,6 +181,30 @@ module "db_bootstrap_irsa" {
   }
 }
 
+# Datadog Agent secrets, readable only by the datadog-secrets service account in the datadog namespace.
+module "datadog" {
+  source = "../../modules/datadog"
+
+  name_prefix             = "${var.project_name}/${var.environment}"
+  recovery_window_in_days = var.secrets_recovery_window_in_days
+}
+
+module "datadog_irsa" {
+  source = "../../modules/service-irsa"
+
+  name              = local.name
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_issuer       = module.eks.oidc_issuer
+  namespace         = "datadog"
+
+  services = {
+    "datadog-secrets" = {
+      secret_arns      = [module.datadog.api_key_secret_arn, module.datadog.cluster_agent_token_secret_arn]
+      extra_statements = []
+    }
+  }
+}
+
 module "github_oidc" {
   source = "../../modules/github-oidc"
 

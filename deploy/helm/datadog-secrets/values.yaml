@@ -1,0 +1,11 @@
+# Service account (IRSA) allowed to read only the two Datadog secrets.
+name: datadog-secrets
+awsRegion: us-east-1
+serviceAccount:
+  roleArn: ""
+# Secrets Manager names (terraform outputs datadog_api_key_secret_name and module.datadog.cluster_agent_token_secret_name).
+apiKeySecret: ""
+clusterAgentTokenSecret: ""
+# Kubernetes Secret the Datadog chart reads (datadog.apiKeyExistingSecret / clusterAgent.tokenExistingSecret).
+targetSecret: datadog-secret
+refreshInterval: 1h
