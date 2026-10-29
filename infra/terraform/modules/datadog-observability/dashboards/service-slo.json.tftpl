@@ -1,0 +1,1036 @@
+{
+  "title": "Smart Hospital - Service SLI / SLO / SLA (dev)",
+  "description": "SLIs from APM (ddtrace FastAPI spans; /health probes excluded), SLO status and error budget for the six services, and the SLA reference. Targets: availability SLO ${availability_target}% / 30d, latency SLO p95 <= ${latency_threshold_ms} ms in ${latency_target}% of 5-minute slices, SLA ${sla_target}%. Managed by Terraform (infra/terraform/environments/dev-observability).",
+  "layout_type": "ordered",
+  "reflow_type": "fixed",
+  "template_variables": [
+    {
+      "name": "env",
+      "prefix": "env",
+      "default": "dev"
+    },
+    {
+      "name": "service",
+      "prefix": "service",
+      "default": "*"
+    }
+  ],
+  "widgets": [
+    {
+      "definition": {
+        "type": "group",
+        "layout_type": "ordered",
+        "title": "Definitions",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "type": "note",
+              "content": "**SLI** availability = (requests - 5xx errors) / requests, from APM.  **SLI** latency = p95 request duration.\n\n**SLO** availability ${availability_target}% over 30 days; latency p95 <= ${latency_threshold_ms} ms in ${latency_target}% of 5-minute windows.\n\n**SLA** ${sla_target}% availability (customer commitment, below the SLO so the SLO alerts first). Colours on the SLI tiles: green >= SLO, yellow between SLA and SLO, red < SLA.",
+              "background_color": "gray",
+              "font_size": "14",
+              "text_align": "left",
+              "show_tick": false,
+              "has_padding": true
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 2
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 12,
+        "height": 3
+      }
+    },
+    {
+      "definition": {
+        "type": "group",
+        "layout_type": "ordered",
+        "title": "SLI - availability (selected time range)",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "type": "query_value",
+              "title": "identity-service availability SLI",
+              "autoscale": true,
+              "precision": 2,
+              "requests": [
+                {
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.fastapi.request.hits{env:$env,service:identity-service}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.fastapi.request.errors{env:$env,service:identity-service}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "(h - e) / h * 100",
+                      "number_format": {
+                        "unit": {
+                          "type": "canonical_unit",
+                          "unit_name": "percent"
+                        }
+                      }
+                    }
+                  ],
+                  "response_format": "scalar",
+                  "conditional_formats": [
+                    {
+                      "comparator": "<",
+                      "value": 99,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 99.5,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 99.5,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 2,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "query_value",
+              "title": "patient-service availability SLI",
+              "autoscale": true,
+              "precision": 2,
+              "requests": [
+                {
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.fastapi.request.hits{env:$env,service:patient-service}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.fastapi.request.errors{env:$env,service:patient-service}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "(h - e) / h * 100",
+                      "number_format": {
+                        "unit": {
+                          "type": "canonical_unit",
+                          "unit_name": "percent"
+                        }
+                      }
+                    }
+                  ],
+                  "response_format": "scalar",
+                  "conditional_formats": [
+                    {
+                      "comparator": "<",
+                      "value": 99,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 99.5,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 99.5,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 2,
+              "y": 0,
+              "width": 2,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "query_value",
+              "title": "provider-service availability SLI",
+              "autoscale": true,
+              "precision": 2,
+              "requests": [
+                {
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.fastapi.request.hits{env:$env,service:provider-service}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.fastapi.request.errors{env:$env,service:provider-service}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "(h - e) / h * 100",
+                      "number_format": {
+                        "unit": {
+                          "type": "canonical_unit",
+                          "unit_name": "percent"
+                        }
+                      }
+                    }
+                  ],
+                  "response_format": "scalar",
+                  "conditional_formats": [
+                    {
+                      "comparator": "<",
+                      "value": 99,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 99.5,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 99.5,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 4,
+              "y": 0,
+              "width": 2,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "query_value",
+              "title": "facility-service availability SLI",
+              "autoscale": true,
+              "precision": 2,
+              "requests": [
+                {
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.fastapi.request.hits{env:$env,service:facility-service}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.fastapi.request.errors{env:$env,service:facility-service}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "(h - e) / h * 100",
+                      "number_format": {
+                        "unit": {
+                          "type": "canonical_unit",
+                          "unit_name": "percent"
+                        }
+                      }
+                    }
+                  ],
+                  "response_format": "scalar",
+                  "conditional_formats": [
+                    {
+                      "comparator": "<",
+                      "value": 99,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 99.5,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 99.5,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 6,
+              "y": 0,
+              "width": 2,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "query_value",
+              "title": "scheduling-service availability SLI",
+              "autoscale": true,
+              "precision": 2,
+              "requests": [
+                {
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.fastapi.request.hits{env:$env,service:scheduling-service}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.fastapi.request.errors{env:$env,service:scheduling-service}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "(h - e) / h * 100",
+                      "number_format": {
+                        "unit": {
+                          "type": "canonical_unit",
+                          "unit_name": "percent"
+                        }
+                      }
+                    }
+                  ],
+                  "response_format": "scalar",
+                  "conditional_formats": [
+                    {
+                      "comparator": "<",
+                      "value": 99,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 99.5,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 99.5,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 8,
+              "y": 0,
+              "width": 2,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "query_value",
+              "title": "appointment-service availability SLI",
+              "autoscale": true,
+              "precision": 2,
+              "requests": [
+                {
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.fastapi.request.hits{env:$env,service:appointment-service}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.fastapi.request.errors{env:$env,service:appointment-service}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "(h - e) / h * 100",
+                      "number_format": {
+                        "unit": {
+                          "type": "canonical_unit",
+                          "unit_name": "percent"
+                        }
+                      }
+                    }
+                  ],
+                  "response_format": "scalar",
+                  "conditional_formats": [
+                    {
+                      "comparator": "<",
+                      "value": 99,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 99.5,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 99.5,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 10,
+              "y": 0,
+              "width": 2,
+              "height": 2
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 3,
+        "width": 12,
+        "height": 3
+      }
+    },
+    {
+      "definition": {
+        "type": "group",
+        "layout_type": "ordered",
+        "title": "SLO status and error budget",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "type": "slo",
+              "title": "identity-service availability SLO",
+              "slo_id": "${slo.identity_service_availability}",
+              "time_windows": [
+                "7d",
+                "30d"
+              ],
+              "view_type": "detail",
+              "view_mode": "overall",
+              "show_error_budget": true,
+              "global_time_target": "0"
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "slo",
+              "title": "identity-service latency SLO (p95)",
+              "slo_id": "${slo.identity_service_latency}",
+              "time_windows": [
+                "7d",
+                "30d"
+              ],
+              "view_type": "detail",
+              "view_mode": "overall",
+              "show_error_budget": true,
+              "global_time_target": "0"
+            },
+            "layout": {
+              "x": 3,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "slo",
+              "title": "patient-service availability SLO",
+              "slo_id": "${slo.patient_service_availability}",
+              "time_windows": [
+                "7d",
+                "30d"
+              ],
+              "view_type": "detail",
+              "view_mode": "overall",
+              "show_error_budget": true,
+              "global_time_target": "0"
+            },
+            "layout": {
+              "x": 6,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "slo",
+              "title": "patient-service latency SLO (p95)",
+              "slo_id": "${slo.patient_service_latency}",
+              "time_windows": [
+                "7d",
+                "30d"
+              ],
+              "view_type": "detail",
+              "view_mode": "overall",
+              "show_error_budget": true,
+              "global_time_target": "0"
+            },
+            "layout": {
+              "x": 9,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "slo",
+              "title": "provider-service availability SLO",
+              "slo_id": "${slo.provider_service_availability}",
+              "time_windows": [
+                "7d",
+                "30d"
+              ],
+              "view_type": "detail",
+              "view_mode": "overall",
+              "show_error_budget": true,
+              "global_time_target": "0"
+            },
+            "layout": {
+              "x": 0,
+              "y": 2,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "slo",
+              "title": "provider-service latency SLO (p95)",
+              "slo_id": "${slo.provider_service_latency}",
+              "time_windows": [
+                "7d",
+                "30d"
+              ],
+              "view_type": "detail",
+              "view_mode": "overall",
+              "show_error_budget": true,
+              "global_time_target": "0"
+            },
+            "layout": {
+              "x": 3,
+              "y": 2,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "slo",
+              "title": "facility-service availability SLO",
+              "slo_id": "${slo.facility_service_availability}",
+              "time_windows": [
+                "7d",
+                "30d"
+              ],
+              "view_type": "detail",
+              "view_mode": "overall",
+              "show_error_budget": true,
+              "global_time_target": "0"
+            },
+            "layout": {
+              "x": 6,
+              "y": 2,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "slo",
+              "title": "facility-service latency SLO (p95)",
+              "slo_id": "${slo.facility_service_latency}",
+              "time_windows": [
+                "7d",
+                "30d"
+              ],
+              "view_type": "detail",
+              "view_mode": "overall",
+              "show_error_budget": true,
+              "global_time_target": "0"
+            },
+            "layout": {
+              "x": 9,
+              "y": 2,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "slo",
+              "title": "scheduling-service availability SLO",
+              "slo_id": "${slo.scheduling_service_availability}",
+              "time_windows": [
+                "7d",
+                "30d"
+              ],
+              "view_type": "detail",
+              "view_mode": "overall",
+              "show_error_budget": true,
+              "global_time_target": "0"
+            },
+            "layout": {
+              "x": 0,
+              "y": 4,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "slo",
+              "title": "scheduling-service latency SLO (p95)",
+              "slo_id": "${slo.scheduling_service_latency}",
+              "time_windows": [
+                "7d",
+                "30d"
+              ],
+              "view_type": "detail",
+              "view_mode": "overall",
+              "show_error_budget": true,
+              "global_time_target": "0"
+            },
+            "layout": {
+              "x": 3,
+              "y": 4,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "slo",
+              "title": "appointment-service availability SLO",
+              "slo_id": "${slo.appointment_service_availability}",
+              "time_windows": [
+                "7d",
+                "30d"
+              ],
+              "view_type": "detail",
+              "view_mode": "overall",
+              "show_error_budget": true,
+              "global_time_target": "0"
+            },
+            "layout": {
+              "x": 6,
+              "y": 4,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "slo",
+              "title": "appointment-service latency SLO (p95)",
+              "slo_id": "${slo.appointment_service_latency}",
+              "time_windows": [
+                "7d",
+                "30d"
+              ],
+              "view_type": "detail",
+              "view_mode": "overall",
+              "show_error_budget": true,
+              "global_time_target": "0"
+            },
+            "layout": {
+              "x": 9,
+              "y": 4,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "type": "slo_list",
+              "title": "All Smart Hospital SLOs",
+              "requests": [
+                {
+                  "request_type": "slo_list",
+                  "query": {
+                    "query_string": "project:smart-hospital",
+                    "limit": 50
+                  }
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 6,
+              "width": 12,
+              "height": 4
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 6,
+        "width": 12,
+        "height": 11
+      }
+    },
+    {
+      "definition": {
+        "type": "group",
+        "layout_type": "ordered",
+        "title": "SLA compliance",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Availability % by service vs SLO and SLA",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "requests": [
+                {
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.fastapi.request.hits{env:$env,service:$service} by {service}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.fastapi.request.errors{env:$env,service:$service} by {service}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "(h - e) / h * 100",
+                      "alias": "availability %",
+                      "number_format": {
+                        "unit": {
+                          "type": "canonical_unit",
+                          "unit_name": "percent"
+                        }
+                      }
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "line"
+                }
+              ],
+              "markers": [
+                {
+                  "value": "y = ${availability_target}",
+                  "display_type": "warning dashed",
+                  "label": "SLO ${availability_target}%"
+                },
+                {
+                  "value": "y = ${sla_target}",
+                  "display_type": "error dashed",
+                  "label": "SLA ${sla_target}%"
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 3
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 17,
+        "width": 12,
+        "height": 4
+      }
+    },
+    {
+      "definition": {
+        "type": "group",
+        "layout_type": "ordered",
+        "title": "Golden signals",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Requests/s by service",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "requests": [
+                {
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "a",
+                      "query": "sum:trace.fastapi.request.hits{env:$env,service:$service} by {service}.as_rate()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "a"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Error rate % by service",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "requests": [
+                {
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.fastapi.request.errors{env:$env,service:$service} by {service}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.fastapi.request.hits{env:$env,service:$service} by {service}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "e / h * 100",
+                      "alias": "error %",
+                      "number_format": {
+                        "unit": {
+                          "type": "canonical_unit",
+                          "unit_name": "percent"
+                        }
+                      }
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "line"
+                }
+              ]
+            },
+            "layout": {
+              "x": 6,
+              "y": 0,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "p95 latency by service",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "requests": [
+                {
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "a",
+                      "query": "p95:trace.fastapi.request{env:$env,service:$service} by {service}",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "a",
+                      "number_format": {
+                        "unit": {
+                          "type": "canonical_unit",
+                          "unit_name": "second"
+                        }
+                      }
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "line"
+                }
+              ],
+              "markers": [
+                {
+                  "value": "y = ${latency_threshold_s}",
+                  "display_type": "error dashed",
+                  "label": "${latency_threshold_ms} ms"
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 3,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "p50 / p99 latency (all services)",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "requests": [
+                {
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "p50",
+                      "query": "p50:trace.fastapi.request{env:$env,service:$service}",
+                      "aggregator": "avg"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "p99",
+                      "query": "p99:trace.fastapi.request{env:$env,service:$service}",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "p50",
+                      "alias": "p50",
+                      "number_format": {
+                        "unit": {
+                          "type": "canonical_unit",
+                          "unit_name": "second"
+                        }
+                      }
+                    },
+                    {
+                      "formula": "p99",
+                      "alias": "p99",
+                      "number_format": {
+                        "unit": {
+                          "type": "canonical_unit",
+                          "unit_name": "second"
+                        }
+                      }
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "line"
+                }
+              ]
+            },
+            "layout": {
+              "x": 6,
+              "y": 3,
+              "width": 6,
+              "height": 3
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 21,
+        "width": 12,
+        "height": 7
+      }
+    },
+    {
+      "definition": {
+        "type": "group",
+        "layout_type": "ordered",
+        "title": "Logs",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "type": "log_stream",
+              "title": "Error logs",
+              "query": "env:$env.value service:$service.value status:error",
+              "indexes": [],
+              "columns": [
+                "host",
+                "service"
+              ],
+              "message_display": "inline",
+              "show_date_column": true,
+              "show_message_column": true,
+              "sort": {
+                "column": "time",
+                "order": "desc"
+              }
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 4
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 28,
+        "width": 12,
+        "height": 5
+      }
+    }
+  ]
+}
