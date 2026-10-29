@@ -68,19 +68,19 @@
                     {
                       "data_source": "metrics",
                       "name": "h",
-                      "query": "sum:trace.fastapi.request.hits{env:$env,service:identity-service}.as_count()",
+                      "query": "sum:trace.fastapi.request.hits{$env,service:identity-service}.as_count()",
                       "aggregator": "sum"
                     },
                     {
                       "data_source": "metrics",
                       "name": "e",
-                      "query": "sum:trace.fastapi.request.errors{env:$env,service:identity-service}.as_count()",
+                      "query": "sum:trace.fastapi.request.errors{$env,service:identity-service}.as_count()",
                       "aggregator": "sum"
                     }
                   ],
                   "formulas": [
                     {
-                      "formula": "(h - e) / h * 100",
+                      "formula": "(h - default_zero(e)) / h * 100",
                       "number_format": {
                         "unit": {
                           "type": "canonical_unit",
@@ -129,19 +129,19 @@
                     {
                       "data_source": "metrics",
                       "name": "h",
-                      "query": "sum:trace.fastapi.request.hits{env:$env,service:patient-service}.as_count()",
+                      "query": "sum:trace.fastapi.request.hits{$env,service:patient-service}.as_count()",
                       "aggregator": "sum"
                     },
                     {
                       "data_source": "metrics",
                       "name": "e",
-                      "query": "sum:trace.fastapi.request.errors{env:$env,service:patient-service}.as_count()",
+                      "query": "sum:trace.fastapi.request.errors{$env,service:patient-service}.as_count()",
                       "aggregator": "sum"
                     }
                   ],
                   "formulas": [
                     {
-                      "formula": "(h - e) / h * 100",
+                      "formula": "(h - default_zero(e)) / h * 100",
                       "number_format": {
                         "unit": {
                           "type": "canonical_unit",
@@ -190,19 +190,19 @@
                     {
                       "data_source": "metrics",
                       "name": "h",
-                      "query": "sum:trace.fastapi.request.hits{env:$env,service:provider-service}.as_count()",
+                      "query": "sum:trace.fastapi.request.hits{$env,service:provider-service}.as_count()",
                       "aggregator": "sum"
                     },
                     {
                       "data_source": "metrics",
                       "name": "e",
-                      "query": "sum:trace.fastapi.request.errors{env:$env,service:provider-service}.as_count()",
+                      "query": "sum:trace.fastapi.request.errors{$env,service:provider-service}.as_count()",
                       "aggregator": "sum"
                     }
                   ],
                   "formulas": [
                     {
-                      "formula": "(h - e) / h * 100",
+                      "formula": "(h - default_zero(e)) / h * 100",
                       "number_format": {
                         "unit": {
                           "type": "canonical_unit",
@@ -251,19 +251,19 @@
                     {
                       "data_source": "metrics",
                       "name": "h",
-                      "query": "sum:trace.fastapi.request.hits{env:$env,service:facility-service}.as_count()",
+                      "query": "sum:trace.fastapi.request.hits{$env,service:facility-service}.as_count()",
                       "aggregator": "sum"
                     },
                     {
                       "data_source": "metrics",
                       "name": "e",
-                      "query": "sum:trace.fastapi.request.errors{env:$env,service:facility-service}.as_count()",
+                      "query": "sum:trace.fastapi.request.errors{$env,service:facility-service}.as_count()",
                       "aggregator": "sum"
                     }
                   ],
                   "formulas": [
                     {
-                      "formula": "(h - e) / h * 100",
+                      "formula": "(h - default_zero(e)) / h * 100",
                       "number_format": {
                         "unit": {
                           "type": "canonical_unit",
@@ -312,19 +312,19 @@
                     {
                       "data_source": "metrics",
                       "name": "h",
-                      "query": "sum:trace.fastapi.request.hits{env:$env,service:scheduling-service}.as_count()",
+                      "query": "sum:trace.fastapi.request.hits{$env,service:scheduling-service}.as_count()",
                       "aggregator": "sum"
                     },
                     {
                       "data_source": "metrics",
                       "name": "e",
-                      "query": "sum:trace.fastapi.request.errors{env:$env,service:scheduling-service}.as_count()",
+                      "query": "sum:trace.fastapi.request.errors{$env,service:scheduling-service}.as_count()",
                       "aggregator": "sum"
                     }
                   ],
                   "formulas": [
                     {
-                      "formula": "(h - e) / h * 100",
+                      "formula": "(h - default_zero(e)) / h * 100",
                       "number_format": {
                         "unit": {
                           "type": "canonical_unit",
@@ -373,19 +373,19 @@
                     {
                       "data_source": "metrics",
                       "name": "h",
-                      "query": "sum:trace.fastapi.request.hits{env:$env,service:appointment-service}.as_count()",
+                      "query": "sum:trace.fastapi.request.hits{$env,service:appointment-service}.as_count()",
                       "aggregator": "sum"
                     },
                     {
                       "data_source": "metrics",
                       "name": "e",
-                      "query": "sum:trace.fastapi.request.errors{env:$env,service:appointment-service}.as_count()",
+                      "query": "sum:trace.fastapi.request.errors{$env,service:appointment-service}.as_count()",
                       "aggregator": "sum"
                     }
                   ],
                   "formulas": [
                     {
-                      "formula": "(h - e) / h * 100",
+                      "formula": "(h - default_zero(e)) / h * 100",
                       "number_format": {
                         "unit": {
                           "type": "canonical_unit",
@@ -739,19 +739,19 @@
                     {
                       "data_source": "metrics",
                       "name": "h",
-                      "query": "sum:trace.fastapi.request.hits{env:$env,service:$service} by {service}.as_count()",
+                      "query": "sum:trace.fastapi.request.hits{$env,$service} by {service}.as_count()",
                       "aggregator": "sum"
                     },
                     {
                       "data_source": "metrics",
                       "name": "e",
-                      "query": "sum:trace.fastapi.request.errors{env:$env,service:$service} by {service}.as_count()",
+                      "query": "sum:trace.fastapi.request.errors{$env,$service} by {service}.as_count()",
                       "aggregator": "sum"
                     }
                   ],
                   "formulas": [
                     {
-                      "formula": "(h - e) / h * 100",
+                      "formula": "(h - default_zero(e)) / h * 100",
                       "alias": "availability %",
                       "number_format": {
                         "unit": {
@@ -813,7 +813,7 @@
                     {
                       "data_source": "metrics",
                       "name": "a",
-                      "query": "sum:trace.fastapi.request.hits{env:$env,service:$service} by {service}.as_rate()",
+                      "query": "sum:trace.fastapi.request.hits{$env,$service} by {service}.as_rate()",
                       "aggregator": "sum"
                     }
                   ],
@@ -846,19 +846,19 @@
                     {
                       "data_source": "metrics",
                       "name": "e",
-                      "query": "sum:trace.fastapi.request.errors{env:$env,service:$service} by {service}.as_count()",
+                      "query": "sum:trace.fastapi.request.errors{$env,$service} by {service}.as_count()",
                       "aggregator": "sum"
                     },
                     {
                       "data_source": "metrics",
                       "name": "h",
-                      "query": "sum:trace.fastapi.request.hits{env:$env,service:$service} by {service}.as_count()",
+                      "query": "sum:trace.fastapi.request.hits{$env,$service} by {service}.as_count()",
                       "aggregator": "sum"
                     }
                   ],
                   "formulas": [
                     {
-                      "formula": "e / h * 100",
+                      "formula": "default_zero(e) / h * 100",
                       "alias": "error %",
                       "number_format": {
                         "unit": {
@@ -892,7 +892,7 @@
                     {
                       "data_source": "metrics",
                       "name": "a",
-                      "query": "p95:trace.fastapi.request{env:$env,service:$service} by {service}",
+                      "query": "p95:trace.fastapi.request{$env,$service} by {service}",
                       "aggregator": "avg"
                     }
                   ],
@@ -938,13 +938,13 @@
                     {
                       "data_source": "metrics",
                       "name": "p50",
-                      "query": "p50:trace.fastapi.request{env:$env,service:$service}",
+                      "query": "p50:trace.fastapi.request{$env,$service}",
                       "aggregator": "avg"
                     },
                     {
                       "data_source": "metrics",
                       "name": "p99",
-                      "query": "p99:trace.fastapi.request{env:$env,service:$service}",
+                      "query": "p99:trace.fastapi.request{$env,$service}",
                       "aggregator": "avg"
                     }
                   ],
