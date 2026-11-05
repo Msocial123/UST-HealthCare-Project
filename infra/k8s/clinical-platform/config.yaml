@@ -1,0 +1,14 @@
+# Non-secret runtime settings shared by all six services. Secrets (JWT key, DB URLs) are created by deploy.sh.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clinical-platform-config
+  namespace: clinical-platform
+data:
+  APP_ENV: production
+  LOG_LEVEL: INFO
+  JWT_ALGORITHM: HS256
+  JWT_KEY_ID: k1
+  JWT_ISSUER: https://identity.smart-hospital.local
+  JWT_AUDIENCE: smart-hospital-api
+  JWT_LEEWAY_SECONDS: "30"

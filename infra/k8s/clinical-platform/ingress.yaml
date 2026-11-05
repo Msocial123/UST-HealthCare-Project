@@ -1,0 +1,97 @@
+# One internet-facing ALB (AWS Load Balancer Controller, IngressGroup "clinical-platform") with
+# path-based routing to all six services. Services keep their own /api/v1/<resource> paths (ALB does not
+# strip prefixes), so routes are the real resource prefixes from each service's FastAPI routers.
+# /api/v1/providers/{id}/{working-hours,slots,exceptions} belong to scheduling-service but also match
+# provider-service's /api/v1/providers/* rule. They live in a separate Ingress with a lower group.order,
+# which makes the ALB evaluate them first (the controller sorts paths within one Ingress by type, so
+# listing them first in a single Ingress is not enough).
+# /health and /health/ready exist on every service and are not routed publicly (ALB health checks hit pods directly).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: clinical-platform-scheduling
+  namespace: clinical-platform
+  annotations:
+    alb.ingress.kubernetes.io/group.name: clinical-platform
+    alb.ingress.kubernetes.io/load-balancer-name: clinical-platform-alb
+    alb.ingress.kubernetes.io/group.order: "10"
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/tags: Project=clinical-platform
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /api/v1/providers/*/working-hours
+            pathType: ImplementationSpecific
+            backend: {service: {name: scheduling-service, port: {number: 8005}}}
+          - path: /api/v1/providers/*/slots
+            pathType: ImplementationSpecific
+            backend: {service: {name: scheduling-service, port: {number: 8005}}}
+          - path: /api/v1/providers/*/exceptions
+            pathType: ImplementationSpecific
+            backend: {service: {name: scheduling-service, port: {number: 8005}}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: clinical-platform
+  namespace: clinical-platform
+  annotations:
+    alb.ingress.kubernetes.io/group.name: clinical-platform
+    alb.ingress.kubernetes.io/load-balancer-name: clinical-platform-alb
+    alb.ingress.kubernetes.io/group.order: "20"
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/tags: Project=clinical-platform
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          # scheduling-service
+          - path: /api/v1/working-hours
+            pathType: Prefix
+            backend: {service: {name: scheduling-service, port: {number: 8005}}}
+          - path: /api/v1/exceptions
+            pathType: Prefix
+            backend: {service: {name: scheduling-service, port: {number: 8005}}}
+          # identity-service
+          - path: /api/v1/auth
+            pathType: Prefix
+            backend: {service: {name: identity-service, port: {number: 8001}}}
+          - path: /api/v1/users
+            pathType: Prefix
+            backend: {service: {name: identity-service, port: {number: 8001}}}
+          - path: /api/v1/roles
+            pathType: Prefix
+            backend: {service: {name: identity-service, port: {number: 8001}}}
+          # patient-service
+          - path: /api/v1/patients
+            pathType: Prefix
+            backend: {service: {name: patient-service, port: {number: 8002}}}
+          # provider-service
+          - path: /api/v1/providers
+            pathType: Prefix
+            backend: {service: {name: provider-service, port: {number: 8003}}}
+          - path: /api/v1/specialties
+            pathType: Prefix
+            backend: {service: {name: provider-service, port: {number: 8003}}}
+          # facility-service
+          - path: /api/v1/facilities
+            pathType: Prefix
+            backend: {service: {name: facility-service, port: {number: 8004}}}
+          - path: /api/v1/departments
+            pathType: Prefix
+            backend: {service: {name: facility-service, port: {number: 8004}}}
+          # appointment-service
+          - path: /api/v1/appointments
+            pathType: Prefix
+            backend: {service: {name: appointment-service, port: {number: 8006}}}
