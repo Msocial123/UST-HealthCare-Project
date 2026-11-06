@@ -35,6 +35,7 @@ spec:
     spec:
       serviceAccountName: {{ include "microservice.name" . }}
       automountServiceAccountToken: false
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds | default 40 }}
       securityContext:
         {{- include "microservice.podSecurityContext" . | nindent 8 }}
       topologySpreadConstraints:
@@ -54,6 +55,11 @@ spec:
               protocol: TCP
           envFrom:
             {{- include "microservice.envFrom" . | nindent 12 }}
+          lifecycle:
+            preStop:
+              exec:
+                # Keep serving while the ALB deregisters the target, then uvicorn handles SIGTERM.
+                command: ["python", "-c", "import time; time.sleep({{ .Values.preStopSleepSeconds | default 10 }})"]
           startupProbe:
             httpGet:
               path: {{ .Values.probes.livenessPath }}

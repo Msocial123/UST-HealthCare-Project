@@ -1,0 +1,23 @@
+# Proposes digest bumps for the pinned python base image and SHA bumps for pinned GitHub Actions.
+version: 2
+updates:
+  - package-ecosystem: docker
+    directories:
+      - /services/identity-service
+      - /services/patient-service
+      - /services/provider-service
+      - /services/facility-service
+      - /services/scheduling-service
+      - /services/appointment-service
+    schedule:
+      interval: weekly
+    groups:
+      python-base:
+        patterns: ["python"]
+    ignore:
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
