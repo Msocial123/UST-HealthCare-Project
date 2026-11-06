@@ -3,7 +3,13 @@ data "aws_partition" "current" {}
 data "aws_caller_identity" "current" {}
 
 locals {
-  oidc_host         = "token.actions.githubusercontent.com"
+  oidc_host = "token.actions.githubusercontent.com"
+  trusted_subjects = flatten([
+    for s in var.allowed_subjects : concat(
+      ["repo:${var.github_repository}:${s}"],
+      var.github_immutable_repository == null ? [] : ["repo:${var.github_immutable_repository}:${s}"],
+    )
+  ])
   oidc_provider_arn = var.create_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_host}"
 }
 
@@ -34,12 +40,7 @@ data "aws_iam_policy_document" "assume" {
     condition {
       test     = "StringLike"
       variable = "${local.oidc_host}:sub"
-      values = flatten([
-        for s in var.allowed_subjects : concat(
-          ["repo:${var.github_repository}:${s}"],
-          var.github_immutable_repository == null ? [] : ["repo:${var.github_immutable_repository}:${s}"],
-        )
-      ])
+      values   = local.trusted_subjects
     }
   }
 }
