@@ -14,6 +14,12 @@ variable "github_repository" {
   type        = string
 }
 
+variable "github_immutable_repository" {
+  description = "Repository in GitHub's immutable OIDC subject form, owner@owner_id/name@repo_id. Set when the repository's sub claim uses that form; trusted in addition to github_repository."
+  type        = string
+  default     = null
+}
+
 variable "allowed_subjects" {
   description = "OIDC sub claims (after repo:<owner/name>:) allowed to assume the role, for example ref:refs/heads/main or environment:dev."
   type        = list(string)

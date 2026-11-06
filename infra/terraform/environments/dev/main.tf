@@ -208,14 +208,15 @@ module "datadog_irsa" {
 module "github_oidc" {
   source = "../../modules/github-oidc"
 
-  name                  = local.name
-  create_oidc_provider  = var.github_create_oidc_provider
-  github_repository     = var.github_repository
-  allowed_subjects      = var.github_allowed_subjects
-  ecr_repository_arns   = values(module.ecr.repository_arns)
-  cluster_name          = module.eks.cluster_name
-  cluster_arn           = module.eks.cluster_arn
-  kubernetes_namespaces = [var.kubernetes_namespace]
+  name                        = local.name
+  create_oidc_provider        = var.github_create_oidc_provider
+  github_repository           = var.github_repository
+  github_immutable_repository = var.github_immutable_repository
+  allowed_subjects            = var.github_allowed_subjects
+  ecr_repository_arns         = values(module.ecr.repository_arns)
+  cluster_name                = module.eks.cluster_name
+  cluster_arn                 = module.eks.cluster_arn
+  kubernetes_namespaces       = [var.kubernetes_namespace]
 }
 
 module "acm" {
