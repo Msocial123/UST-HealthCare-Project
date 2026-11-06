@@ -3,20 +3,15 @@
 # Argo CD syncs the change automatically.
 image:
   repository: 165742853391.dkr.ecr.us-east-1.amazonaws.com/smart-hospital/identity-service
-  tag: "5f077cdb0217"
-
+  tag: "222708f7fe96"
 replicaCount: 1
-
 serviceAccount:
   roleArn: arn:aws:iam::165742853391:role/smart-hospital-dev-identity-service
-
 secrets:
   database: smart-hospital/dev/identity-service/database
   jwt: smart-hospital/dev/shared/jwt-signing-key
-
 extraEnv:
   APP_ENV: development
-
 # Datadog unified service tagging (env tag on metrics, logs and traces).
 datadog:
   env: dev
