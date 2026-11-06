@@ -116,7 +116,10 @@ enable_waf                   = true
 waf_rate_limit_per_5_minutes = 2000
 
 # ---------- CI/CD (GitHub Actions OIDC) ----------
+# The repository's OIDC sub claim uses GitHub's immutable form; check with
+# gh api repos/<owner>/<repo>/actions/oidc/customization/sub
 github_repository           = "Msocial123/UST-HealthCare-Project"
+github_immutable_repository = "Msocial123@83748367/UST-HealthCare-Project@1418833915"
 github_allowed_subjects     = ["ref:refs/heads/main"]
 github_create_oidc_provider = true # set false if the account already has the GitHub OIDC provider
 
